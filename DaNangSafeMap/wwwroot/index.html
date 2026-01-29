@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DaNang SafeMap - Bản Đồ An Ninh Đô Thị Đà Nẵng</title>
+    <meta name="description"
+        content="Hệ thống bản đồ số cảnh báo an ninh đô thị và hỗ trợ tìm người thất lạc tại Đà Nẵng">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        cream: { 50: '#FFFDF8', 100: '#FDF7E7', 200: '#F5ECD7', 300: '#EBE0C8' },
+                        emerald: { DEFAULT: '#2D8A6E', light: '#3DA885', dark: '#1F6B54' },
+                        ocean: { DEFAULT: '#3B82A0', light: '#5BA3C0' },
+                        terracotta: { DEFAULT: '#D97B4A', light: '#E69B6F' },
+                        charcoal: '#374151',
+                        slate: { DEFAULT: '#64748B', light: '#94A3B8' }
+                    },
+                    fontFamily: { sans: ['Be Vietnam Pro', 'system-ui', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="css/main.css">
+</head>
+
+<body class="bg-cream-100 text-charcoal font-sans antialiased">
+
+    <!-- Floating Clouds Background -->
+    <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div class="cloud absolute top-[10%] left-[5%] animate-float opacity-40">
+            <svg width="120" height="60" viewBox="0 0 120 60">
+                <ellipse cx="60" cy="40" rx="50" ry="20" fill="#fff" />
+                <circle cx="35" cy="35" r="20" fill="#fff" />
+                <circle cx="70" cy="30" r="25" fill="#fff" />
+                <circle cx="90" cy="38" r="18" fill="#fff" />
+            </svg>
+        </div>
+        <div class="cloud absolute top-[25%] right-[10%] animate-float-slow opacity-30" style="animation-delay: 2s;">
+            <svg width="100" height="50" viewBox="0 0 100 50">
+                <ellipse cx="50" cy="35" rx="40" ry="15" fill="#fff" />
+                <circle cx="30" cy="30" r="15" fill="#fff" />
+                <circle cx="60" cy="25" r="18" fill="#fff" />
+            </svg>
+        </div>
+        <div class="cloud absolute top-[60%] left-[15%] animate-float-reverse opacity-25" style="animation-delay: 4s;">
+            <svg width="80" height="40" viewBox="0 0 80 40">
+                <ellipse cx="40" cy="28" rx="35" ry="12" fill="#fff" />
+                <circle cx="25" cy="25" r="12" fill="#fff" />
+                <circle cx="50" cy="22" r="14" fill="#fff" />
+            </svg>
+        </div>
+    </div>
+
+    <!-- Header Navigation -->
+    <header class="fixed top-4 left-4 right-4 z-50">
+        <nav class="max-w-7xl mx-auto nav-warm rounded-full px-2">
+            <div class="px-6 py-3">
+                <div class="flex items-center justify-between">
+                    <a href="/" class="flex items-center gap-3 group">
+                        <div
+                            class="w-11 h-11 bg-gradient-to-br from-emerald to-emerald-dark rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105 group-hover:rotate-3">
+                            <i data-lucide="shield-check" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <div>
+                            <span class="text-xl font-bold text-emerald">DaNang</span>
+                            <span class="text-xl font-bold text-charcoal">SafeMap</span>
+                        </div>
+                    </a>
+
+                    <div class="hidden md:flex items-center gap-1">
+                        <a href="#home" class="nav-link active"><i data-lucide="home" class="w-4 h-4"></i>Trang Chủ</a>
+                        <a href="#features" class="nav-link"><i data-lucide="sparkles" class="w-4 h-4"></i>Tính Năng</a>
+                        <a href="#map" class="nav-link"><i data-lucide="map" class="w-4 h-4"></i>Bản Đồ</a>
+                        <a href="about.html" class="nav-link"><i data-lucide="info" class="w-4 h-4"></i>Giới Thiệu</a>
+                    </div>
+
+                    <div class="hidden md:flex items-center gap-3">
+                        <a href="login.html"
+                            class="px-5 py-2.5 text-emerald hover:text-emerald-dark font-medium transition-colors">Đăng
+                            Nhập</a>
+                        <a href="register.html" class="btn-primary py-2.5 px-6 text-sm">Đăng Ký</a>
+                    </div>
+
+                    <button id="mobileMenuBtn"
+                        class="md:hidden p-2 text-emerald hover:text-emerald-dark rounded-xl hover:bg-emerald/10 transition-colors">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="mobileMenu"
+                class="hidden md:hidden border-t border-emerald/10 px-6 py-4 bg-white/50 rounded-b-3xl">
+                <div class="flex flex-col gap-2">
+                    <a href="#home" class="mobile-nav-link active">Trang Chủ</a>
+                    <a href="#features" class="mobile-nav-link">Tính Năng</a>
+                    <a href="#map" class="mobile-nav-link">Bản Đồ</a>
+                    <a href="about.html" class="mobile-nav-link">Giới Thiệu</a>
+                    <hr class="border-emerald/10 my-2">
+                    <a href="login.html" class="mobile-nav-link">Đăng Nhập</a>
+                    <a href="register.html" class="mobile-nav-link text-emerald font-semibold">Đăng Ký</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Hero Section with Dragon Bridge Illustration -->
+    <section id="home" class="hero-section pt-28 pb-20">
+        <div class="hero-bg-pattern"></div>
+
+        <!-- SVG Dragon Bridge Illustration -->
+        <div class="hero-illustration hidden lg:block">
+            <svg viewBox="0 0 800 600" class="w-full h-full">
+                <!-- River -->
+                <ellipse cx="400" cy="520" rx="380" ry="60" fill="url(#riverGradient)" opacity="0.6" />
+                <defs>
+                    <linearGradient id="riverGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" style="stop-color:#3B82A0;stop-opacity:0.3" />
+                        <stop offset="50%" style="stop-color:#5BA3C0;stop-opacity:0.5" />
+                        <stop offset="100%" style="stop-color:#3B82A0;stop-opacity:0.3" />
+                    </linearGradient>
+                    <linearGradient id="dragonGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#2D8A6E" />
+                        <stop offset="100%" style="stop-color:#1F6B54" />
+                    </linearGradient>
+                    <linearGradient id="fireGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" style="stop-color:#D97B4A" />
+                        <stop offset="50%" style="stop-color:#F59E0B" />
+                        <stop offset="100%" style="stop-color:#EF4444;stop-opacity:0" />
+                    </linearGradient>
+                </defs>
+
+                <!-- Bridge Base -->
+                <path d="M100 420 Q250 380 400 400 Q550 420 700 380" stroke="#E5E7EB" stroke-width="8" fill="none" />
+
+                <!-- Dragon Body - Cute Style -->
+                <g class="animate-float" style="transform-origin: center;">
+                    <!-- Body -->
+                    <path d="M150 350 Q200 280 300 300 Q400 320 500 290 Q600 260 650 300" stroke="url(#dragonGradient)"
+                        stroke-width="35" fill="none" stroke-linecap="round" />
+                    <!-- Head -->
+                    <circle cx="650" cy="300" r="45" fill="url(#dragonGradient)" />
+                    <!-- Cute Eyes -->
+                    <circle cx="665" cy="290" r="12" fill="white" />
+                    <circle cx="668" cy="288" r="6" fill="#1F2937" />
+                    <circle cx="670" cy="286" r="2" fill="white" />
+                    <!-- Smile -->
+                    <path d="M660 310 Q670 320 680 310" stroke="white" stroke-width="3" fill="none"
+                        stroke-linecap="round" />
+                    <!-- Horns -->
+                    <path d="M635 265 L625 240 L640 255" fill="#DAA520" />
+                    <path d="M655 260 L650 235 L665 250" fill="#DAA520" />
+                    <!-- Tail -->
+                    <path d="M150 350 Q120 330 100 360 Q80 390 110 380" stroke="url(#dragonGradient)" stroke-width="20"
+                        fill="none" stroke-linecap="round" />
+                </g>
+
+                <!-- Fire Animation -->
+                <g class="animate-pulse" style="transform-origin: 700px 300px;">
+                    <ellipse cx="720" cy="305" rx="40" ry="15" fill="url(#fireGradient)" opacity="0.8" />
+                    <ellipse cx="750" cy="305" rx="30" ry="10" fill="url(#fireGradient)" opacity="0.6" />
+                </g>
+
+                <!-- Boats on River -->
+                <g class="animate-float-slow" style="animation-delay: 1s;">
+                    <path d="M200 510 L220 530 L180 530 Z" fill="#D97B4A" opacity="0.7" />
+                    <line x1="200" y1="500" x2="200" y2="510" stroke="#8B4513" stroke-width="2" />
+                </g>
+                <g class="animate-float-reverse" style="animation-delay: 3s;">
+                    <path d="M550 500 L570 520 L530 520 Z" fill="#D97B4A" opacity="0.6" />
+                    <line x1="550" y1="490" x2="550" y2="500" stroke="#8B4513" stroke-width="2" />
+                </g>
+
+                <!-- Stars/Sparkles -->
+                <g class="animate-pulse" style="animation-delay: 0.5s;">
+                    <circle cx="300" cy="200" r="3" fill="#DAA520" />
+                    <circle cx="500" cy="180" r="2" fill="#DAA520" />
+                    <circle cx="600" cy="220" r="2.5" fill="#DAA520" />
+                    <circle cx="250" cy="250" r="2" fill="#DAA520" />
+                </g>
+
+                <!-- Building Silhouettes -->
+                <rect x="100" y="430" width="30" height="60" rx="3" fill="#E5E7EB" opacity="0.5" />
+                <rect x="140" y="410" width="25" height="80" rx="3" fill="#E5E7EB" opacity="0.4" />
+                <rect x="600" y="420" width="35" height="70" rx="3" fill="#E5E7EB" opacity="0.5" />
+                <rect x="650" y="400" width="28" height="90" rx="3" fill="#E5E7EB" opacity="0.4" />
+            </svg>
+        </div>
+
+        <div class="relative z-10 max-w-7xl mx-auto px-6">
+            <div class="max-w-2xl">
+                <!-- Badge -->
+                <div class="badge-warm mb-6 slide-up">
+                    <span class="dot"></span>
+                    <span>🌉 Thành phố đáng sống nhất Việt Nam</span>
+                </div>
+
+                <!-- Main Heading -->
+                <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-6 leading-tight slide-up delay-100">
+                    <span class="text-charcoal">Bản Đồ An Ninh</span><br>
+                    <span
+                        class="bg-gradient-to-r from-emerald via-ocean to-emerald-dark bg-clip-text text-transparent">Thành
+                        Phố Đà Nẵng</span>
+                </h1>
+
+                <!-- Description -->
+                <p class="text-lg md:text-xl text-slate max-w-xl mb-8 leading-relaxed slide-up delay-200">
+                    🛡️ Cùng cộng đồng xây dựng môi trường an toàn. Báo cáo sự cố, theo dõi cảnh báo
+                    và hỗ trợ tìm kiếm người thất lạc theo thời gian thực.
+                </p>
+
+                <!-- CTA Buttons -->
+                <div class="flex flex-wrap items-center gap-4 mb-12 slide-up delay-300">
+                    <a href="#map" class="btn-primary group">
+                        <i data-lucide="map-pin" class="w-5 h-5 group-hover:animate-bounce"></i>
+                        Khám Phá Bản Đồ
+                        <i data-lucide="arrow-right" class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
+                    </a>
+                    <a href="report.html" class="btn-secondary group">
+                        <i data-lucide="alert-triangle" class="w-5 h-5 text-terracotta group-hover:text-white"></i>
+                        Báo Cáo Sự Cố
+                    </a>
+                </div>
+
+                <!-- Stats with Icons -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 slide-up delay-400">
+                    <div class="stat-card text-center">
+                        <div class="text-3xl mb-1">📍</div>
+                        <div class="stat-number text-2xl">1,234</div>
+                        <div class="stat-label">Điểm cảnh báo</div>
+                    </div>
+                    <div class="stat-card text-center">
+                        <div class="text-3xl mb-1">👨‍👩‍👧‍👦</div>
+                        <div class="stat-number text-2xl">567</div>
+                        <div class="stat-label">Người đã tìm thấy</div>
+                    </div>
+                    <div class="stat-card text-center">
+                        <div class="text-3xl mb-1">⚡</div>
+                        <div class="stat-number text-2xl">89%</div>
+                        <div class="stat-label">Phản hồi nhanh</div>
+                    </div>
+                    <div class="stat-card text-center">
+                        <div class="text-3xl mb-1">💚</div>
+                        <div class="stat-number text-2xl">12K+</div>
+                        <div class="stat-label">Thành viên</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scroll Indicator -->
+        <div class="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
+            <a href="#features"
+                class="w-12 h-12 rounded-full bg-emerald/10 border-2 border-emerald/30 flex items-center justify-center hover:bg-emerald hover:text-white transition-all group">
+                <i data-lucide="chevrons-down" class="w-5 h-5 text-emerald group-hover:text-white"></i>
+            </a>
+        </div>
+    </section>
+
+    <!-- Animated Wave Divider -->
+    <div class="relative h-24 overflow-hidden bg-cream-100">
+        <svg class="absolute bottom-0 w-[200%] h-full" style="animation: wave 15s linear infinite;">
+            <path d="M0 60 Q180 20 360 60 T720 60 T1080 60 T1440 60 V100 H0 Z" fill="#F5ECD7" />
+        </svg>
+    </div>
+
+    <!-- Features Section -->
+    <section id="features" class="py-24 bg-cream-200 relative overflow-hidden">
+        <!-- Decorative Elements -->
+        <div class="absolute top-20 right-10 w-32 h-32 rounded-full bg-emerald/5 animate-float"></div>
+        <div class="absolute bottom-20 left-10 w-24 h-24 rounded-3xl bg-terracotta/5 animate-float-reverse"></div>
+
+        <div class="max-w-7xl mx-auto px-6 relative z-10">
+            <div class="text-center mb-16">
+                <div class="badge-warm mb-4 inline-flex">
+                    <i data-lucide="sparkles" class="w-4 h-4"></i>
+                    <span>Tính năng nổi bật</span>
+                </div>
+                <h2 class="section-title mb-4">
+                    Bạn Có Thể Làm Gì <span class="highlight">?</span>
+                </h2>
+                <p class="section-subtitle">
+                    Khám phá các tính năng giúp bảo vệ an ninh cộng đồng Đà Nẵng
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="feature-card group">
+                    <div class="feature-icon emerald">
+                        <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                            <circle cx="12" cy="10" r="3" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-charcoal mb-3">🗺️ Bản Đồ Thời Gian Thực</h3>
+                    <p class="text-slate mb-4 leading-relaxed">
+                        Xem các điểm cảnh báo an ninh trên bản đồ với vị trí GPS chính xác. Cập nhật liên tục 24/7.
+                    </p>
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        <span class="px-3 py-1 bg-emerald/10 text-emerald text-xs font-medium rounded-full">GPS</span>
+                        <span
+                            class="px-3 py-1 bg-emerald/10 text-emerald text-xs font-medium rounded-full">Heatmap</span>
+                        <span
+                            class="px-3 py-1 bg-emerald/10 text-emerald text-xs font-medium rounded-full">Cluster</span>
+                    </div>
+                    <a href="#map" class="link-warm group-hover:gap-3">
+                        Xem bản đồ <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </a>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="feature-card group">
+                    <div class="feature-icon ocean">
+                        <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8" />
+                            <path d="m21 21-4.35-4.35" />
+                            <path d="M11 8v6" />
+                            <path d="M8 11h6" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-charcoal mb-3">🔍 Tìm Người Thất Lạc</h3>
+                    <p class="text-slate mb-4 leading-relaxed">
+                        Đăng thông tin tìm người với hình ảnh. Cộng đồng hỗ trợ gửi manh mối ẩn danh an toàn.
+                    </p>
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        <span class="px-3 py-1 bg-ocean/10 text-ocean text-xs font-medium rounded-full">Ẩn danh</span>
+                        <span class="px-3 py-1 bg-ocean/10 text-ocean text-xs font-medium rounded-full">Chat</span>
+                        <span class="px-3 py-1 bg-ocean/10 text-ocean text-xs font-medium rounded-full">Thông báo</span>
+                    </div>
+                    <a href="missing.html" class="link-warm group-hover:gap-3" style="color: #3B82A0;">
+                        Tìm kiếm <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </a>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="feature-card group">
+                    <div class="feature-icon terracotta">
+                        <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                            <polyline points="14 2 14 8 20 8" />
+                            <line x1="16" y1="13" x2="8" y2="13" />
+                            <line x1="16" y1="17" x2="8" y2="17" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-charcoal mb-3">📰 Tin Tức An Ninh</h3>
+                    <p class="text-slate mb-4 leading-relaxed">
+                        Cập nhật tin tức an ninh mới nhất, hướng dẫn tự bảo vệ và các cảnh báo từ cộng đồng.
+                    </p>
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        <span class="px-3 py-1 bg-terracotta/10 text-terracotta text-xs font-medium rounded-full">Cập
+                            nhật</span>
+                        <span class="px-3 py-1 bg-terracotta/10 text-terracotta text-xs font-medium rounded-full">Hướng
+                            dẫn</span>
+                        <span class="px-3 py-1 bg-terracotta/10 text-terracotta text-xs font-medium rounded-full">Cảnh
+                            báo</span>
+                    </div>
+                    <a href="news.html" class="link-warm group-hover:gap-3" style="color: #D97B4A;">
+                        Đọc tin <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works with Cute Icons -->
+    <section class="py-24 bg-cream-100">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="section-title mb-4">
+                    Cách <span class="highlight">Hoạt Động</span> 🚀
+                </h2>
+                <p class="section-subtitle">Chỉ 4 bước đơn giản để bảo vệ cộng đồng</p>
+            </div>
+
+            <div class="grid md:grid-cols-4 gap-6 relative">
+                <!-- Connecting Line -->
+                <div
+                    class="hidden md:block absolute top-20 left-[12%] right-[12%] h-1 bg-gradient-to-r from-emerald via-ocean to-terracotta opacity-20 rounded-full">
+                </div>
+
+                <div class="step-card group">
+                    <div class="step-number group-hover:animate-bounce">
+                        <span class="text-2xl">📱</span>
+                    </div>
+                    <h4 class="font-bold text-charcoal mb-2 text-lg">Đăng Ký</h4>
+                    <p class="text-slate text-sm">Tạo tài khoản miễn phí chỉ trong 30 giây</p>
+                </div>
+
+                <div class="step-card group">
+                    <div class="step-number group-hover:animate-bounce" style="animation-delay: 0.1s;">
+                        <span class="text-2xl">📍</span>
+                    </div>
+                    <h4 class="font-bold text-charcoal mb-2 text-lg">Báo Cáo</h4>
+                    <p class="text-slate text-sm">Gửi thông tin sự cố với GPS và hình ảnh</p>
+                </div>
+
+                <div class="step-card group">
+                    <div class="step-number group-hover:animate-bounce" style="animation-delay: 0.2s;">
+                        <span class="text-2xl">✅</span>
+                    </div>
+                    <h4 class="font-bold text-charcoal mb-2 text-lg">Xác Thực</h4>
+                    <p class="text-slate text-sm">Admin và cộng đồng xác minh báo cáo</p>
+                </div>
+
+                <div class="step-card group">
+                    <div class="step-number group-hover:animate-bounce" style="animation-delay: 0.3s;">
+                        <span class="text-2xl">🔔</span>
+                    </div>
+                    <h4 class="font-bold text-charcoal mb-2 text-lg">Cảnh Báo</h4>
+                    <p class="text-slate text-sm">Thông báo đến cộng đồng xung quanh</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Map Section -->
+    <section id="map" class="py-24 bg-cream-200">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-12">
+                <div class="badge-warm mb-4 inline-flex">
+                    <i data-lucide="map" class="w-4 h-4"></i>
+                    <span>Bản đồ trực tiếp</span>
+                </div>
+                <h2 class="section-title mb-4">
+                    Bản Đồ <span class="highlight">An Ninh Đà Nẵng</span>
+                </h2>
+                <p class="section-subtitle">
+                    Theo dõi các điểm cảnh báo an ninh trên toàn thành phố theo thời gian thực
+                </p>
+            </div>
+
+            <div class="relative rounded-3xl overflow-hidden border border-emerald/10 shadow-xl bg-white">
+                <div class="absolute top-4 left-4 z-[1000] flex flex-col gap-3">
+                    <div class="control-panel">
+                        <label class="mb-2 block">⏰ Lọc theo thời gian</label>
+                        <select id="timeFilter">
+                            <option value="1">1 giờ qua</option>
+                            <option value="6">6 giờ qua</option>
+                            <option value="24" selected>24 giờ qua</option>
+                            <option value="48">48 giờ qua</option>
+                        </select>
+                    </div>
+
+                    <div class="control-panel">
+                        <label class="mb-3 block">🏷️ Loại cảnh báo</label>
+                        <div class="flex flex-col gap-2.5">
+                            <label class="flex items-center gap-2.5 cursor-pointer text-charcoal text-sm">
+                                <input type="checkbox" checked class="accent-red-500">
+                                <span>🚨 Xâm phạm sở hữu</span>
+                            </label>
+                            <label class="flex items-center gap-2.5 cursor-pointer text-charcoal text-sm">
+                                <input type="checkbox" checked class="accent-orange-500">
+                                <span>⚠️ Trật tự công cộng</span>
+                            </label>
+                            <label class="flex items-center gap-2.5 cursor-pointer text-charcoal text-sm">
+                                <input type="checkbox" checked class="accent-yellow-500">
+                                <span>🎯 An ninh du lịch</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="absolute bottom-4 left-4 z-[1000] control-panel">
+                    <h4 class="text-sm font-semibold text-charcoal mb-3">📌 Chú thích</h4>
+                    <div class="flex flex-col gap-2.5 text-sm">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-4 h-4 bg-red-500 rounded-full shadow-sm"></span>
+                            <span class="text-slate">Cướp giật, trộm cắp</span>
+                        </div>
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-4 h-4 bg-orange-500 rounded-full shadow-sm"></span>
+                            <span class="text-slate">Gây rối, quậy phá</span>
+                        </div>
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-4 h-4 bg-yellow-500 rounded-full shadow-sm"></span>
+                            <span class="text-slate">Lừa đảo, chèo kéo</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="mapContainer" class="h-[600px] w-full"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section with Dragon Mascot -->
+    <section class="py-24 bg-gradient-to-br from-emerald via-emerald-dark to-ocean relative overflow-hidden">
+        <div
+            class="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 animate-float">
+        </div>
+        <div
+            class="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2 animate-float-reverse">
+        </div>
+
+        <!-- Cute Dragon Mascot -->
+        <div class="absolute right-10 bottom-0 hidden lg:block opacity-20">
+            <svg width="200" height="200" viewBox="0 0 100 100">
+                <circle cx="50" cy="45" r="35" fill="white" />
+                <circle cx="40" cy="40" r="8" fill="#1F2937" />
+                <circle cx="60" cy="40" r="8" fill="#1F2937" />
+                <circle cx="42" cy="38" r="2" fill="white" />
+                <circle cx="62" cy="38" r="2" fill="white" />
+                <path d="M40 55 Q50 65 60 55" stroke="#1F2937" stroke-width="3" fill="none" stroke-linecap="round" />
+                <path d="M25 25 L20 10 L30 20" fill="#DAA520" />
+                <path d="M75 25 L80 10 L70 20" fill="#DAA520" />
+            </svg>
+        </div>
+
+        <div class="max-w-4xl mx-auto px-6 text-center relative z-10">
+            <h2 class="text-3xl md:text-5xl font-bold text-white mb-6">
+                Cùng Xây Dựng<br>
+                <span class="text-cream-200">Đà Nẵng An Toàn</span> 💚
+            </h2>
+            <p class="text-white/80 text-lg mb-10 max-w-2xl mx-auto">
+                Mỗi báo cáo của bạn góp phần bảo vệ cộng đồng. Tham gia ngay để trở thành một phần của hệ thống an ninh
+                thông minh!
+            </p>
+            <div class="flex flex-wrap items-center justify-center gap-4">
+                <a href="register.html"
+                    class="inline-flex items-center gap-3 px-10 py-5 bg-white text-emerald-dark font-bold text-lg rounded-full transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1 group">
+                    <i data-lucide="user-plus" class="w-6 h-6"></i>
+                    Tham Gia Ngay
+                    <i data-lucide="sparkles" class="w-5 h-5 group-hover:animate-pulse"></i>
+                </a>
+                <a href="about.html"
+                    class="inline-flex items-center gap-3 px-8 py-5 bg-transparent border-2 border-white/50 text-white font-semibold text-lg rounded-full transition-all hover:bg-white/10 hover:-translate-y-1">
+                    Tìm Hiểu Thêm
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer-warm py-16">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="grid md:grid-cols-4 gap-10 mb-12">
+                <div>
+                    <div class="flex items-center gap-3 mb-5">
+                        <div
+                            class="w-11 h-11 bg-gradient-to-br from-emerald to-emerald-dark rounded-2xl flex items-center justify-center shadow-md">
+                            <i data-lucide="shield-check" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <span class="text-xl font-bold text-charcoal">DaNang SafeMap</span>
+                    </div>
+                    <p class="text-slate text-sm leading-relaxed mb-4">
+                        🌉 Hệ thống bản đồ số cảnh báo an ninh đô thị - Thành phố Đà Nẵng đáng sống.
+                    </p>
+                    <div class="flex items-center gap-3">
+                        <a href="#"
+                            class="w-10 h-10 rounded-full bg-emerald/10 flex items-center justify-center text-slate hover:bg-emerald hover:text-white transition-all">
+                            <i data-lucide="facebook" class="w-5 h-5"></i>
+                        </a>
+                        <a href="#"
+                            class="w-10 h-10 rounded-full bg-emerald/10 flex items-center justify-center text-slate hover:bg-emerald hover:text-white transition-all">
+                            <i data-lucide="instagram" class="w-5 h-5"></i>
+                        </a>
+                        <a href="#"
+                            class="w-10 h-10 rounded-full bg-emerald/10 flex items-center justify-center text-slate hover:bg-emerald hover:text-white transition-all">
+                            <i data-lucide="youtube" class="w-5 h-5"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div>
+                    <h5 class="font-semibold text-charcoal mb-5">Tính Năng</h5>
+                    <ul class="space-y-3 text-sm">
+                        <li><a href="#map" class="text-slate hover:text-emerald transition-colors">🗺️ Bản đồ an
+                                ninh</a></li>
+                        <li><a href="missing.html" class="text-slate hover:text-emerald transition-colors">🔍 Tìm người
+                                thất lạc</a></li>
+                        <li><a href="news.html" class="text-slate hover:text-emerald transition-colors">📰 Tin tức</a>
+                        </li>
+                        <li><a href="report.html" class="text-slate hover:text-emerald transition-colors">🚨 Báo cáo sự
+                                cố</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h5 class="font-semibold text-charcoal mb-5">Hỗ Trợ</h5>
+                    <ul class="space-y-3 text-sm">
+                        <li><a href="#" class="text-slate hover:text-emerald transition-colors">📖 Hướng dẫn sử dụng</a>
+                        </li>
+                        <li><a href="#" class="text-slate hover:text-emerald transition-colors">❓ Câu hỏi thường gặp</a>
+                        </li>
+                        <li><a href="#" class="text-slate hover:text-emerald transition-colors">📞 Liên hệ</a></li>
+                        <li><a href="#" class="text-slate hover:text-emerald transition-colors">📋 Điều khoản sử
+                                dụng</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h5 class="font-semibold text-charcoal mb-5">Liên Hệ</h5>
+                    <ul class="space-y-3 text-sm">
+                        <li class="flex items-center gap-3 text-slate">
+                            <i data-lucide="mail" class="w-4 h-4 text-emerald"></i>
+                            contact@danangsafemap.vn
+                        </li>
+                        <li class="flex items-center gap-3 text-slate">
+                            <i data-lucide="phone" class="w-4 h-4 text-emerald"></i>
+                            0236 123 4567
+                        </li>
+                        <li class="flex items-center gap-3 text-slate">
+                            <i data-lucide="map-pin" class="w-4 h-4 text-emerald"></i>
+                            🌴 Đà Nẵng, Việt Nam
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="border-t border-emerald/10 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+                <p class="text-slate text-sm">
+                    © 2026 DaNang SafeMap 🐉 Dự án PBL3 - ĐH Bách Khoa Đà Nẵng
+                </p>
+                <p class="text-slate-light text-xs">Made with 💚 in Da Nang</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="js/main.js"></script>
+</body>
+
+</html>

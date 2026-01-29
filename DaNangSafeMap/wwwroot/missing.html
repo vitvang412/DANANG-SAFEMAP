@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tìm Người Mất Tích - DaNang SafeMap</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { 50: '#FFFBEB', 100: '#FEF3C7', 200: '#FDE68A', 300: '#FCD34D', 400: '#FBBF24', 500: '#F59E0B', 600: '#D97706', 700: '#B45309', 800: '#92400E', 900: '#78350F' },
+                        dark: { 800: '#1F2937', 900: '#111827' }
+                    },
+                    fontFamily: { sans: ['Be Vietnam Pro', 'system-ui', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="css/main.css">
+</head>
+
+<body class="bg-dark-900 text-white font-sans antialiased">
+
+    <!-- Header -->
+    <header class="fixed top-4 left-4 right-4 z-50">
+        <nav
+            class="max-w-7xl mx-auto bg-dark-800/90 backdrop-blur-xl rounded-2xl border border-primary-500/20 shadow-xl">
+            <div class="px-6 py-4 flex items-center justify-between">
+                <a href="index.html" class="flex items-center gap-3">
+                    <div
+                        class="w-10 h-10 bg-gradient-to-br from-primary-400 to-primary-600 rounded-xl flex items-center justify-center">
+                        <i data-lucide="shield-check" class="w-6 h-6 text-dark-900"></i>
+                    </div>
+                    <span class="text-xl font-bold"><span class="text-primary-400">DaNang</span>SafeMap</span>
+                </a>
+
+                <div class="hidden md:flex items-center gap-1">
+                    <a href="index.html#map" class="nav-link"><i data-lucide="map" class="w-4 h-4"></i>Bản Đồ</a>
+                    <a href="missing.html" class="nav-link active"><i data-lucide="search" class="w-4 h-4"></i>Tìm
+                        Người</a>
+                    <a href="news.html" class="nav-link"><i data-lucide="newspaper" class="w-4 h-4"></i>Tin Tức</a>
+                </div>
+
+                <div class="hidden md:flex items-center gap-3">
+                    <a href="login.html" class="px-4 py-2 text-primary-400 font-medium">Đăng Nhập</a>
+                    <a href="register.html"
+                        class="px-5 py-2.5 bg-gradient-to-r from-primary-500 to-primary-600 text-dark-900 font-semibold rounded-xl">Đăng
+                        Ký</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="pt-28 pb-16 px-6">
+        <div class="max-w-7xl mx-auto">
+
+            <!-- Page Header -->
+            <div class="text-center mb-12">
+                <h1 class="text-3xl md:text-4xl font-bold mb-4">
+                    <span class="text-white">Tìm Kiếm</span>
+                    <span class="text-primary-400">Người Thất Lạc</span>
+                </h1>
+                <p class="text-gray-400 max-w-xl mx-auto">
+                    Cộng đồng cùng chung tay tìm kiếm người thân. Gửi manh mối ẩn danh an toàn.
+                </p>
+            </div>
+
+            <!-- Action Bar -->
+            <div class="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+                <!-- Tabs -->
+                <div class="flex bg-dark-800 rounded-xl p-1 border border-primary-500/20">
+                    <button class="tab-btn active" data-tab="featured">
+                        <i data-lucide="star" class="w-4 h-4"></i>
+                        Nổi Bật
+                    </button>
+                    <button class="tab-btn" data-tab="newfeed">
+                        <i data-lucide="clock" class="w-4 h-4"></i>
+                        Mới Nhất
+                    </button>
+                </div>
+
+                <!-- Post Button -->
+                <a href="missing-create.html"
+                    class="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-dark-900 font-semibold rounded-xl shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40 transition-all">
+                    <i data-lucide="plus" class="w-5 h-5"></i>
+                    Đăng Tìm Người
+                </a>
+            </div>
+
+            <!-- Cards Grid -->
+            <div id="missingGrid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+                <!-- Card 1 - Featured -->
+                <div class="missing-card featured">
+                    <div class="absolute top-4 left-4 z-10">
+                        <span
+                            class="px-3 py-1 bg-red-500 text-white text-xs font-semibold rounded-full flex items-center gap-1">
+                            <span class="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
+                            Đang Tìm
+                        </span>
+                    </div>
+                    <div class="relative h-64 overflow-hidden rounded-t-2xl">
+                        <img src="https://images.unsplash.com/photo-1491349174775-aaafddd81942?w=400"
+                            alt="Nguyễn Thị Mai" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-gradient-to-t from-dark-900 via-transparent to-transparent">
+                        </div>
+                    </div>
+                    <div class="p-5">
+                        <h3 class="text-lg font-bold text-white mb-1">Nguyễn Thị Mai</h3>
+                        <p class="text-gray-400 text-sm mb-3">Nữ • 32 tuổi • Cao 1m58</p>
+                        <div class="flex items-center gap-2 text-sm text-gray-500 mb-3">
+                            <i data-lucide="map-pin" class="w-4 h-4 text-primary-500"></i>
+                            <span>Quận Hải Châu, Đà Nẵng</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-sm text-gray-500 mb-4">
+                            <i data-lucide="calendar" class="w-4 h-4 text-primary-500"></i>
+                            <span>Mất liên lạc: 25/01/2026</span>
+                        </div>
+                        <p class="text-gray-400 text-sm line-clamp-2 mb-4">
+                            Mặc áo khoác màu đỏ, quần jean xanh. Dấu hiệu: sẹo nhỏ ở cằm bên trái.
+                        </p>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2 text-sm text-primary-400">
+                                <i data-lucide="message-circle" class="w-4 h-4"></i>
+                                <span>12 manh mối</span>
+                            </div>
+                            <a href="missing-detail.html"
+                                class="flex items-center gap-1 text-sm text-primary-400 hover:text-primary-300 font-medium">
+                                Chi tiết
+                                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="missing-card">
+                    <div class="absolute top-4 left-4 z-10">
+                        <span
+                            class="px-3 py-1 bg-red-500 text-white text-xs font-semibold rounded-full flex items-center gap-1">
+                            <span class="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
+                            Đang Tìm
+                        </span>
+                    </div>
+                    <div class="relative h-64 overflow-hidden rounded-t-2xl">
+                        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400"
+                            alt="Trần Văn Hùng" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-gradient-to-t from-dark-900 via-transparent to-transparent">
+                        </div>
+                    </div>
+                    <div class="p-5">
+                        <h3 class="text-lg font-bold text-white mb-1">Trần Văn Hùng</h3>
+                        <p class="text-gray-400 text-sm mb-3">Nam • 68 tuổi • Cao 1m65</p>
+                        <div class="flex items-center gap-2 text-sm text-gray-500 mb-3">
+                            <i data-lucide="map-pin" class="w-4 h-4 text-primary-500"></i>
+                            <span>Quận Sơn Trà, Đà Nẵng</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-sm text-gray-500 mb-4">
+                            <i data-lucide="calendar" class="w-4 h-4 text-primary-500"></i>
+                            <span>Mất liên lạc: 24/01/2026</span>
+                        </div>
+                        <p class="text-gray-400 text-sm line-clamp-2 mb-4">
+                            Có dấu hiệu Alzheimer. Mặc áo sơ mi trắng, quần tây đen. Đeo kính cận.
+                        </p>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2 text-sm text-primary-400">
+                                <i data-lucide="message-circle" class="w-4 h-4"></i>
+                                <span>5 manh mối</span>
+                            </div>
+                            <a href="#"
+                                class="flex items-center gap-1 text-sm text-primary-400 hover:text-primary-300 font-medium">
+                                Chi tiết
+                                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3 - Resolved -->
+                <div class="missing-card resolved">
+                    <div class="absolute top-4 left-4 z-10">
+                        <span
+                            class="px-3 py-1 bg-green-500 text-white text-xs font-semibold rounded-full flex items-center gap-1">
+                            <i data-lucide="check" class="w-3 h-3"></i>
+                            Đã Tìm Thấy
+                        </span>
+                    </div>
+                    <div class="relative h-64 overflow-hidden rounded-t-2xl">
+                        <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400" alt="Lê Thị Hoa"
+                            class="w-full h-full object-cover grayscale-[50%]">
+                        <div class="absolute inset-0 bg-gradient-to-t from-dark-900 via-transparent to-transparent">
+                        </div>
+                    </div>
+                    <div class="p-5">
+                        <h3 class="text-lg font-bold text-white mb-1">Lê Thị Hoa</h3>
+                        <p class="text-gray-400 text-sm mb-3">Nữ • 45 tuổi</p>
+                        <div class="flex items-center gap-2 text-sm text-green-400 mb-4">
+                            <i data-lucide="heart" class="w-4 h-4"></i>
+                            <span>Đã đoàn tụ với gia đình ngày 23/01</span>
+                        </div>
+                        <p class="text-gray-400 text-sm mb-4">
+                            Cảm ơn cộng đồng đã hỗ trợ tìm kiếm. Chị Hoa đã được tìm thấy tại Quận Cẩm Lệ.
+                        </p>
+                        <div class="flex items-center justify-end">
+                            <a href="#" class="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-400">
+                                Xem chi tiết
+                                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Load More -->
+            <div class="text-center mt-10">
+                <button
+                    class="px-8 py-3 bg-dark-800 border border-primary-500/30 hover:border-primary-500/50 text-white font-medium rounded-xl transition-colors flex items-center gap-2 mx-auto">
+                    <i data-lucide="loader" class="w-5 h-5"></i>
+                    Xem thêm
+                </button>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark-900 border-t border-primary-500/10 py-8">
+        <div class="max-w-7xl mx-auto px-6 text-center text-gray-500 text-sm">
+            © 2026 DaNang SafeMap. Dự án PBL3 - ĐH Bách Khoa Đà Nẵng.
+        </div>
+    </footer>
+
+    <style>
+        .tab-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.625rem 1.25rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #9CA3AF;
+            border-radius: 0.625rem;
+            transition: all 0.2s;
+        }
+
+        .tab-btn:hover {
+            color: #FBBF24;
+        }
+
+        .tab-btn.active {
+            background: rgba(251, 191, 36, 0.15);
+            color: #FBBF24;
+        }
+
+        .missing-card {
+            position: relative;
+            background: linear-gradient(to bottom, rgba(31, 41, 55, 0.8), rgba(17, 24, 39, 0.95));
+            border: 1px solid rgba(251, 191, 36, 0.1);
+            border-radius: 1.5rem;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .missing-card:hover {
+            border-color: rgba(251, 191, 36, 0.3);
+            transform: translateY(-8px);
+            box-shadow: 0 25px 50px -12px rgba(251, 191, 36, 0.15);
+        }
+
+        .missing-card.featured {
+            border-color: rgba(251, 191, 36, 0.3);
+        }
+
+        .missing-card.resolved {
+            opacity: 0.8;
+        }
+    </style>
+
+    <script>
+        lucide.createIcons();
+
+        // Tab switching
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            });
+        });
+    </script>
+</body>
+
+</html>
