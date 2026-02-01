@@ -1,0 +1,27 @@
+﻿@{
+    ViewData["Title"] = "Trang chủ - DaNangSafeMap";
+}
+
+<div class="container mt-5">
+    <div class="jumbotron bg-light p-5 rounded">
+        <h1 class="display-4">Chào mừng, @ViewData["Username"]!</h1>
+        <p class="lead">Bạn đã đăng nhập thành công vào hệ thống DaNangSafeMap.</p>
+        <hr class="my-4">
+        <p>Vai trò của bạn: <span class="badge bg-primary">@ViewData["Role"]</span></p>
+        
+        <div class="mt-4">
+            <h4>Chức năng hệ thống:</h4>
+            <ul>
+                <li>Quản lý bản đồ an toàn đô thị</li>
+                <li>Theo dõi sự kiện an ninh</li>
+                <li>Báo cáo sự cố</li>
+                <li>Xem thống kê</li>
+            </ul>
+        </div>
+        
+        <form asp-controller="Account" asp-action="Logout" method="post" class="mt-4">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-danger">Đăng xuất</button>
+        </form>
+    </div>
+</div>
