@@ -15,22 +15,29 @@
                     {
                         <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
                     }
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+                    }
 
                     <!-- Google Registration Option -->
                     <div class="text-center mb-4">
                         <a asp-action="GoogleRegister" class="btn btn-danger btn-lg w-100">
                             <i class="bi bi-google"></i> Đăng ký bằng Google
                         </a>
-                        <p class="text-muted mt-2 small">Đăng ký nhanh với Google (vẫn cần nhập mật khẩu và thông tin bổ sung)</p>
+                        <p class="text-muted mt-2 small">Đăng ký nhanh với Google (vẫn cần nhập mật khẩu và thông tin bổ
+                            sung)</p>
                     </div>
 
                     <div class="position-relative my-4">
                         <hr>
-                        <span class="position-absolute top-50 start-50 translate-middle bg-white px-3 text-muted">HOẶC</span>
+                        <span class="position-absolute top-50 start-50 translate-middle bg-white px-3 text-muted">HOẶC
+                            ĐĂNG KÝ BẰNG EMAIL</span>
                     </div>
 
-                    <!-- Standard Registration Form -->
-                    <form asp-action="Register" method="post">
+                    <!-- Email Registration Form -->
+                    <form asp-action="RegisterWithEmail" method="post">
+                        @Html.AntiForgeryToken()
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label asp-for="FullName" class="form-label"></label>
@@ -78,18 +85,22 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label asp-for="Password" class="form-label"></label>
-                                <input asp-for="Password" type="password" class="form-control" placeholder="Tối thiểu 6 ký tự" />
+                                <input asp-for="Password" type="password" class="form-control"
+                                    placeholder="Tối thiểu 6 ký tự" />
                                 <span asp-validation-for="Password" class="text-danger"></span>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label asp-for="ConfirmPassword" class="form-label"></label>
-                                <input asp-for="ConfirmPassword" type="password" class="form-control" placeholder="Nhập lại mật khẩu" />
+                                <input asp-for="ConfirmPassword" type="password" class="form-control"
+                                    placeholder="Nhập lại mật khẩu" />
                                 <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
                             </div>
                         </div>
 
                         <div class="d-grid gap-2 mt-4">
-                            <button type="submit" class="btn btn-success btn-lg">Đăng ký & Liên kết Google</button>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-envelope-check me-2"></i>Đăng ký (Xác nhận qua Email)
+                            </button>
                             <a asp-action="Login" class="btn btn-outline-secondary">Quay lại đăng nhập</a>
                         </div>
                     </form>

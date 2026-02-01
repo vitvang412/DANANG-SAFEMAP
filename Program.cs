@@ -48,22 +48,37 @@ builder.Services.AddAuthentication(options =>
         options.ClaimActions.MapJsonKey("urn:google:picture", "picture", "url");
         options.ClaimActions.MapJsonKey("urn:google:locale", "locale", "string");
 
-        options.Events.OnRedirectToAuthorizationEndpoint = context =>
+        // Configure events
+        options.Events = new Microsoft.AspNetCore.Authentication.OAuth.OAuthEvents
         {
-            if (context.Properties.Items.ContainsKey("prompt"))
+            OnRedirectToAuthorizationEndpoint = context =>
             {
-                context.Response.Redirect(context.RedirectUri + "&prompt=" + context.Properties.Items["prompt"]);
-            }
-            else
+                var redirectUri = context.RedirectUri;
+                if (context.Properties.Items.ContainsKey("prompt"))
+                {
+                    redirectUri += "&prompt=" + context.Properties.Items["prompt"];
+                }
+                context.Response.Redirect(redirectUri);
+                return Task.CompletedTask;
+            },
+            OnRemoteFailure = context =>
             {
-                context.Response.Redirect(context.RedirectUri);
+                // Log the error for debugging
+                Console.WriteLine($"OAuth Error: {context.Failure?.Message ?? "Unknown error"}");
+
+                // Handle the error gracefully - redirect to a safe page
+                context.Response.Redirect("/Account/Register?error=oauth_failed");
+                context.HandleResponse(); // Prevent the default error handling
+                return Task.CompletedTask;
             }
-            return Task.CompletedTask;
         };
     });
 
 // Register services
+builder.Services.AddMemoryCache();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IOtpService, OtpService>();
 // builder.Services.AddScoped<IGoogleAuthService, GoogleAuthService>(); // Removed as logic is in Controller
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSession(options =>

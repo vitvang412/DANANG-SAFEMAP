@@ -15,32 +15,37 @@
                     {
                         <div class="alert alert-success">@TempData["SuccessMessage"]</div>
                     }
-                    
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+                    }
+
                     <form asp-action="Login" method="post">
                         <div class="mb-3">
-                            <label asp-for="EmailOrPhone" class="form-label"></label>
-                            <input asp-for="EmailOrPhone" class="form-control" placeholder="Nhập email hoặc số điện thoại" />
-                            <span asp-validation-for="EmailOrPhone" class="text-danger"></span>
+                            <label asp-for="Email" class="form-label"></label>
+                            <input asp-for="Email" class="form-control" placeholder="Nhập email" />
+                            <span asp-validation-for="Email" class="text-danger"></span>
                         </div>
-                        
+
                         <div class="mb-3">
                             <label asp-for="Password" class="form-label"></label>
-                            <input asp-for="Password" type="password" class="form-control" placeholder="Nhập mật khẩu" />
+                            <input asp-for="Password" type="password" class="form-control"
+                                placeholder="Nhập mật khẩu" />
                             <span asp-validation-for="Password" class="text-danger"></span>
                         </div>
-                        
+
                         <div class="mb-3 form-check">
                             <input asp-for="RememberMe" class="form-check-input" />
                             <label asp-for="RememberMe" class="form-check-label"></label>
                         </div>
-                        
+
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary btn-lg">Đăng nhập</button>
                         </div>
                     </form>
 
                     <hr class="my-4">
-                    
+
                     <div class="d-grid gap-2">
                         <a asp-action="GoogleLogin" class="btn btn-outline-danger">
                             <i class="bi bi-google"></i> Đăng nhập bằng Google
@@ -48,7 +53,7 @@
                     </div>
 
                     <div class="text-center mt-3">
-                        <p class="mb-0">Chưa có tài khoản? 
+                        <p class="mb-0">Chưa có tài khoản?
                             <a asp-action="Register" class="fw-bold">Đăng ký ngay</a>
                         </p>
                     </div>

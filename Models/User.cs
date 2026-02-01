@@ -31,10 +31,6 @@ namespace DaNangSafeMap.Models
         [StringLength(100)]
         public string Email { get; set; }
 
-        [Column("google_id")]
-        [StringLength(100)]
-        public string? GoogleId { get; set; }
-
         [Column("role")]
         public string Role { get; set; } = "user";
 

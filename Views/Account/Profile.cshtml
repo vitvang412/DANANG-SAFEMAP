@@ -96,21 +96,6 @@
                             }
                         </div>
                     </div>
-                    <hr>
-                    <div class="row mb-3">
-                        <div class="col-md-4 fw-bold">Liên kết Google:</div>
-                        <div class="col-md-8">
-                            @if (!string.IsNullOrEmpty(Model.GoogleId))
-                            {
-                                <span class="badge bg-success"><i class="bi bi-check-circle"></i> Đã liên kết</span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-secondary"><i class="bi bi-x-circle"></i> Chưa liên kết</span>
-                            }
-                        </div>
-                    </div>
-                    <hr>
                     <div class="row">
                         <div class="col-md-4 fw-bold">Ngày tạo tài khoản:</div>
                         <div class="col-md-8">@Model.Created_At.ToString("dd/MM/yyyy HH:mm")</div>

@@ -24,12 +24,11 @@ namespace DaNangSafeMap.Services
                 // Try to find user by email or phone (via UserProfile)
                 var user = await _context.Users
                     .Include(u => u.UserProfile)
-                    .FirstOrDefaultAsync(u => u.Email == emailOrPhone ||
-                                            (u.UserProfile != null && u.UserProfile.PhoneNumber == emailOrPhone));
+                    .FirstOrDefaultAsync(u => u.Email == emailOrPhone);
 
                 if (user == null)
                 {
-                    _logger.LogWarning("User with email/phone '{EmailOrPhone}' not found", emailOrPhone);
+                    _logger.LogWarning("User with email '{Email}' not found", emailOrPhone);
                     return null;
                 }
 
@@ -41,12 +40,12 @@ namespace DaNangSafeMap.Services
                     return user;
                 }
 
-                _logger.LogWarning("Invalid password for user '{EmailOrPhone}'", emailOrPhone);
+                _logger.LogWarning("Invalid password for user '{Email}'", emailOrPhone);
                 return null;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error validating user '{EmailOrPhone}'", emailOrPhone);
+                _logger.LogError(ex, "Error validating user '{Email}'", emailOrPhone);
                 return null;
             }
         }
@@ -131,8 +130,7 @@ namespace DaNangSafeMap.Services
                     Password_Hash = hashedPassword,
                     Salt = salt,
                     Role = "user",
-                    Created_At = DateTime.UtcNow,
-                    GoogleId = model.GoogleId
+                    Created_At = DateTime.UtcNow
                 };
 
                 await _context.Users.AddAsync(user);
@@ -163,7 +161,7 @@ namespace DaNangSafeMap.Services
             }
         }
 
-        public async Task<(bool Success, string Message)> RegisterStandardUserAsync(RegisterStandardViewModel model, string googleId)
+        public async Task<(bool Success, string Message)> RegisterStandardUserAsync(RegisterStandardViewModel model)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
@@ -190,8 +188,7 @@ namespace DaNangSafeMap.Services
                     Password_Hash = hashedPassword,
                     Salt = salt,
                     Role = "user",
-                    Created_At = DateTime.UtcNow,
-                    GoogleId = googleId // Linked immediately
+                    Created_At = DateTime.UtcNow
                 };
 
                 await _context.Users.AddAsync(user);
@@ -219,13 +216,6 @@ namespace DaNangSafeMap.Services
                 _logger.LogError(ex, "Error registering standard user {Email}", model.Email);
                 return (false, "Lỗi khi tạo tài khoản.");
             }
-        }
-
-        public async Task<User?> FindByGoogleIdAsync(string googleId)
-        {
-            return await _context.Users
-                .Include(u => u.UserProfile) // Include profile if needed, though strictly not required for login
-                .FirstOrDefaultAsync(u => u.GoogleId == googleId);
         }
 
         public async Task<User?> FindByEmailAsync(string email)

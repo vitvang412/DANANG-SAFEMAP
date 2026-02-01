@@ -14,11 +14,16 @@ namespace DaNangSafeMap.Controllers
     {
         private readonly IAuthService _authService;
         private readonly ApplicationDbContext _context;
+        private readonly IEmailService _emailService;
+        private readonly IOtpService _otpService;
 
-        public AccountController(IAuthService authService, ApplicationDbContext context)
+        public AccountController(IAuthService authService, ApplicationDbContext context,
+            IEmailService emailService, IOtpService otpService)
         {
             _authService = authService;
             _context = context;
+            _emailService = emailService;
+            _otpService = otpService;
         }
 
         [HttpGet]
@@ -34,7 +39,7 @@ namespace DaNangSafeMap.Controllers
         {
             if (!ModelState.IsValid) return View(model);
 
-            var user = await _authService.ValidateUserAsync(model.EmailOrPhone, model.Password);
+            var user = await _authService.ValidateUserAsync(model.Email, model.Password);
             if (user != null)
             {
                 await SignInUserAsync(user, model.RememberMe);
@@ -42,14 +47,7 @@ namespace DaNangSafeMap.Controllers
             }
 
             // Check if user exists but password is wrong
-            var userExists = await _authService.FindByEmailAsync(model.EmailOrPhone);
-            if (userExists == null)
-            {
-                userExists = await _context.Users
-                    .Include(u => u.UserProfile)
-                    .FirstOrDefaultAsync(u => u.UserProfile != null && u.UserProfile.PhoneNumber == model.EmailOrPhone);
-            }
-
+            var userExists = await _authService.FindByEmailAsync(model.Email);
             if (userExists != null)
             {
                 ModelState.AddModelError("", "Sai mật khẩu. Vui lòng thử lại.");
@@ -89,8 +87,8 @@ namespace DaNangSafeMap.Controllers
                 return RedirectToAction("Login");
             }
 
-            // Check if user exists by Google ID - ALLOW LOGIN
-            var user = await _authService.FindByGoogleIdAsync(googleId);
+            // Check if user exists by Email - ALLOW LOGIN
+            var user = await _authService.FindByEmailAsync(email);
             if (user != null)
             {
                 // User exists - LOGIN them
@@ -134,14 +132,16 @@ namespace DaNangSafeMap.Controllers
             if (string.IsNullOrEmpty(googleId) || string.IsNullOrEmpty(email))
             {
                 TempData["ErrorMessage"] = "Không thể lấy thông tin từ Google. Vui lòng thử lại.";
+                TempData["OAuthComplete"] = true;
                 return RedirectToAction("Register");
             }
 
-            // Check if user exists by Google ID - BLOCK REGISTRATION
-            var user = await _authService.FindByGoogleIdAsync(googleId);
+            // Check if user exists by Email - BLOCK REGISTRATION
+            var user = await _authService.FindByEmailAsync(email);
             if (user != null)
             {
-                TempData["ErrorMessage"] = "Tài khoản này đã tồn tại. Vui lòng đăng nhập hoặc tạo tài khoản khác.";
+                TempData["ErrorMessage"] = "Email này đã tồn tại. Vui lòng đăng nhập hoặc chọn tài khoản Google khác.";
+                TempData["OAuthComplete"] = true;
                 return RedirectToAction("Register");
             }
 
@@ -150,6 +150,7 @@ namespace DaNangSafeMap.Controllers
             if (existingUser != null)
             {
                 TempData["ErrorMessage"] = "Email này đã được đăng ký bằng phương thức khác. Vui lòng đăng ký bằng tài khoản Google khác hoặc đăng nhập bằng email/mật khẩu.";
+                TempData["OAuthComplete"] = true;
                 return RedirectToAction("Register");
             }
 
@@ -204,6 +205,117 @@ namespace DaNangSafeMap.Controllers
             return View("CompleteProfile", model);
         }
 
+        // ===== METHOD 1B: REGISTER WITH EMAIL OTP (no Google) =====
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RegisterWithEmail(RegisterStandardViewModel model)
+        {
+            if (!ModelState.IsValid) return View("Register", model);
+
+            // Check if email already exists
+            var existingUser = await _authService.FindByEmailAsync(model.Email);
+            if (existingUser != null)
+            {
+                ModelState.AddModelError("Email", "Email này đã được sử dụng.");
+                return View("Register", model);
+            }
+
+            // Generate and send OTP
+            var otp = _otpService.GenerateOtp();
+            _otpService.StoreOtp(model.Email, otp, model);
+
+            var emailSent = await _emailService.SendOtpAsync(model.Email, otp);
+            if (!emailSent)
+            {
+                TempData["ErrorMessage"] = "Không thể gửi email. Vui lòng thử lại.";
+                return View("Register", model);
+            }
+
+            TempData["SuccessMessage"] = "Mã xác nhận đã được gửi đến email của bạn!";
+            return RedirectToAction("VerifyEmail", new { email = model.Email });
+        }
+
+        [HttpGet]
+        public IActionResult VerifyEmail(string email)
+        {
+            if (string.IsNullOrEmpty(email))
+            {
+                return RedirectToAction("Register");
+            }
+
+            return View(new VerifyEmailViewModel { Email = email });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> VerifyEmail(VerifyEmailViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            // Validate OTP
+            if (!_otpService.ValidateOtp(model.Email, model.Otp))
+            {
+                TempData["ErrorMessage"] = "Mã xác nhận không đúng hoặc đã hết hạn.";
+                return View(model);
+            }
+
+            // Get registration data
+            var registrationData = _otpService.GetRegistrationData(model.Email);
+            if (registrationData == null)
+            {
+                TempData["ErrorMessage"] = "Phiên đăng ký đã hết hạn. Vui lòng đăng ký lại.";
+                return RedirectToAction("Register");
+            }
+
+            // Create user
+            var result = await _authService.RegisterStandardUserAsync(registrationData);
+            if (result.Success)
+            {
+                _otpService.ClearOtp(model.Email);
+                TempData["SuccessMessage"] = "Đăng ký thành công! Vui lòng đăng nhập.";
+                return RedirectToAction("Login");
+            }
+
+            TempData["ErrorMessage"] = result.Message;
+            return View(model);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResendOtp(string email)
+        {
+            if (string.IsNullOrEmpty(email))
+            {
+                return RedirectToAction("Register");
+            }
+
+            var registrationData = _otpService.GetRegistrationData(email);
+            if (registrationData == null)
+            {
+                TempData["ErrorMessage"] = "Phiên đăng ký đã hết hạn. Vui lòng đăng ký lại.";
+                return RedirectToAction("Register");
+            }
+
+            // Generate new OTP
+            var otp = _otpService.GenerateOtp();
+            _otpService.StoreOtp(email, otp, registrationData);
+
+            var emailSent = await _emailService.SendOtpAsync(email, otp);
+            if (emailSent)
+            {
+                TempData["SuccessMessage"] = "Mã xác nhận mới đã được gửi!";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Không thể gửi email. Vui lòng thử lại.";
+            }
+
+            return RedirectToAction("VerifyEmail", new { email });
+        }
+
         // Method 2: Standard fill first, then Link
         [HttpGet]
         public async Task<IActionResult> Register(bool fresh = false)
@@ -216,102 +328,6 @@ namespace DaNangSafeMap.Controllers
                 return RedirectToAction("Register", new { fresh = true });
             }
             return View(new RegisterStandardViewModel());
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Register(RegisterStandardViewModel model)
-        {
-            if (!ModelState.IsValid) return View(model);
-
-            // Check if email already exists
-            var existingUser = await _authService.FindByEmailAsync(model.Email);
-            if (existingUser != null)
-            {
-                ModelState.AddModelError("Email", "Email này đã được sử dụng. Vui lòng nhập email khác.");
-                return View(model);
-            }
-
-            // Store in session and redirect to Google for linking
-            HttpContext.Session.SetString("PendingRegistration", System.Text.Json.JsonSerializer.Serialize(model));
-            var properties = new AuthenticationProperties { RedirectUri = Url.Action("LinkGoogleCallback") };
-            properties.Items["prompt"] = "select_account";
-            return Challenge(properties, GoogleDefaults.AuthenticationScheme);
-        }
-
-        public async Task<IActionResult> LinkGoogleCallback()
-        {
-            var result = await HttpContext.AuthenticateAsync(GoogleDefaults.AuthenticationScheme);
-            if (!result.Succeeded)
-            {
-                TempData["ErrorMessage"] = "Không thể kết nối với Google.";
-                return RedirectToAction("Register");
-            }
-
-            // Sign out to prevent authentication cookie conflicts
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-
-            var googleId = result.Principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(googleId))
-            {
-                TempData["ErrorMessage"] = "Không thể lấy thông tin từ Google.";
-                return RedirectToAction("Register");
-            }
-
-            // Check if Google ID is already linked to another account
-            var existingGoogleUser = await _authService.FindByGoogleIdAsync(googleId);
-            if (existingGoogleUser != null)
-            {
-                // Clear session to prevent stale data
-                HttpContext.Session.Remove("PendingRegistration");
-
-                // Google ID already used - redirect back to Register
-                TempData["ErrorMessage"] = "Tài khoản Google này đã được sử dụng. Vui lòng đăng ký lại và chọn tài khoản Google khác.";
-                return RedirectToAction("Register");
-            }
-
-            var sessionData = HttpContext.Session.GetString("PendingRegistration");
-            if (string.IsNullOrEmpty(sessionData))
-            {
-                // Session expired or invalid - user needs to start over
-                TempData["ErrorMessage"] = "Phiên đăng ký đã hết hạn. Vui lòng đăng ký lại từ đầu.";
-                return RedirectToAction("Register");
-            }
-
-            RegisterStandardViewModel? model;
-            try
-            {
-                model = System.Text.Json.JsonSerializer.Deserialize<RegisterStandardViewModel>(sessionData);
-            }
-            catch
-            {
-                HttpContext.Session.Remove("PendingRegistration");
-                TempData["ErrorMessage"] = "Dữ liệu không hợp lệ. Vui lòng đăng ký lại.";
-                return RedirectToAction("Register");
-            }
-
-            if (model == null || string.IsNullOrEmpty(model.Email) || string.IsNullOrEmpty(model.Password))
-            {
-                HttpContext.Session.Remove("PendingRegistration");
-                TempData["ErrorMessage"] = "Thiếu thông tin đăng ký. Vui lòng đăng ký lại.";
-                return RedirectToAction("Register");
-            }
-
-            // Create User
-            var registerResult = await _authService.RegisterStandardUserAsync(model, googleId);
-            if (registerResult.Success)
-            {
-                HttpContext.Session.Remove("PendingRegistration");
-                TempData["SuccessMessage"] = "Đăng ký thành công! Vui lòng đăng nhập.";
-                TempData["OAuthComplete"] = true;
-                return RedirectToAction("Login");
-            }
-
-            // If failed (e.g. Email exists)
-            HttpContext.Session.Remove("PendingRegistration");
-            TempData["ErrorMessage"] = registerResult.Message;
-            TempData["OAuthComplete"] = true;
-            return RedirectToAction("Register");
         }
 
         [HttpGet]
