@@ -1,0 +1,107 @@
+@model DaNangSafeMap.Models.User
+@{
+    ViewData["Title"] = "Thông tin tài khoản";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-person-circle" style="font-size: 5rem; color: #6c757d;"></i>
+                    </div>
+                    <h5 class="card-title">@Model.Username</h5>
+                    <p class="text-muted">@Model.Role</p>
+                    <hr>
+                    <div class="d-grid gap-2">
+                        <a asp-action="EditProfile" class="btn btn-primary">
+                            <i class="bi bi-pencil-square"></i> Chỉnh sửa thông tin
+                        </a>
+                        <a asp-action="ChangePassword" class="btn btn-outline-secondary">
+                            <i class="bi bi-key-fill"></i> Đổi mật khẩu
+                        </a>
+                        <a asp-action="DeleteAccount" class="btn btn-outline-danger">
+                            <i class="bi bi-trash-fill"></i> Xóa tài khoản
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-person-badge"></i> Thông tin cá nhân</h5>
+                </div>
+                <div class="card-body">
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show">
+                            @TempData["SuccessMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show">
+                            @TempData["ErrorMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    <div class="row mb-3">
+                        <div class="col-md-4 fw-bold">Họ và tên:</div>
+                        <div class="col-md-8">@(Model.UserProfile?.FullName ?? "Chưa cập nhật")</div>
+                    </div>
+                    <hr>
+                    <div class="row mb-3">
+                        <div class="col-md-4 fw-bold">Email:</div>
+                        <div class="col-md-8">@Model.Email</div>
+                    </div>
+                    <hr>
+                    <div class="row mb-3">
+                        <div class="col-md-4 fw-bold">Số điện thoại:</div>
+                        <div class="col-md-8">@(Model.UserProfile?.PhoneNumber ?? "Chưa cập nhật")</div>
+                    </div>
+                    <hr>
+                    <div class="row mb-3">
+                        <div class="col-md-4 fw-bold">Địa chỉ:</div>
+                        <div class="col-md-8">@(Model.UserProfile?.Address ?? "Chưa cập nhật")</div>
+                    </div>
+                    <hr>
+                    <div class="row mb-3">
+                        <div class="col-md-4 fw-bold">Ngày sinh:</div>
+                        <div class="col-md-8">@(Model.UserProfile?.DateOfBirth?.ToString("dd/MM/yyyy") ?? "Chưa cập nhật")</div>
+                    </div>
+                    <hr>
+                    <div class="row mb-3">
+                        <div class="col-md-4 fw-bold">Giới tính:</div>
+                        <div class="col-md-8">
+                            @if (Model.UserProfile?.Gender == "Male")
+                            {
+                                <span>Nam</span>
+                            }
+                            else if (Model.UserProfile?.Gender == "Female")
+                            {
+                                <span>Nữ</span>
+                            }
+                            else if (Model.UserProfile?.Gender == "Other")
+                            {
+                                <span>Khác</span>
+                            }
+                            else
+                            {
+                                <span>Chưa cập nhật</span>
+                            }
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 fw-bold">Ngày tạo tài khoản:</div>
+                        <div class="col-md-8">@Model.Created_At.ToString("dd/MM/yyyy HH:mm")</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

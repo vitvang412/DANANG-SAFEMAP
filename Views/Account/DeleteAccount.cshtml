@@ -1,0 +1,46 @@
+@{
+    ViewData["Title"] = "Xóa tài khoản";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow border-danger">
+                <div class="card-header bg-danger text-white text-center">
+                    <h4 class="mb-0"><i class="bi bi-exclamation-triangle-fill"></i> Xóa tài khoản</h4>
+                </div>
+                <div class="card-body p-4">
+                    <div class="alert alert-warning">
+                        <h5 class="alert-heading"><i class="bi bi-exclamation-circle"></i> Cảnh báo!</h5>
+                        <p class="mb-0">Hành động này <strong>không thể hoàn tác</strong>. Tất cả dữ liệu của bạn sẽ bị xóa vĩnh viễn.</p>
+                    </div>
+
+                    <h5 class="mb-3">Dữ liệu sẽ bị xóa:</h5>
+                    <ul class="mb-4">
+                        <li>Thông tin tài khoản</li>
+                        <li>Thông tin cá nhân (họ tên, số điện thoại, địa chỉ...)</li>
+                        <li>Liên kết với tài khoản Google (nếu có)</li>
+                        <li>Tất cả dữ liệu liên quan khác</li>
+                    </ul>
+
+                    <p class="text-muted mb-4">Bạn có chắc chắn muốn xóa tài khoản của mình không?</p>
+
+                    <form asp-action="DeleteAccountConfirmed" method="post">
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger btn-lg">
+                                <i class="bi bi-trash-fill"></i> Xác nhận xóa tài khoản
+                            </button>
+                            <a asp-controller="Home" asp-action="Index" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Hủy bỏ
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
