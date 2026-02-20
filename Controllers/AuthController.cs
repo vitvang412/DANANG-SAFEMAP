@@ -22,5 +22,12 @@ namespace DaNangSafeMap.Controllers
         {
             return View("~/Views/Account/Register.cshtml");
         }
+
+        // GET /Auth/Profile
+        [HttpGet("Profile")]
+        public IActionResult Profile()
+        {
+            return View("~/Views/Account/Profile.cshtml");
+        }
     }
 }
