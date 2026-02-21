@@ -357,7 +357,16 @@ document.getElementById('loginForm').addEventListener('submit', async e => {
             body: JSON.stringify({ email: document.getElementById('email').value, password: document.getElementById('password').value, rememberMe: document.getElementById('remember').checked })
         });
         const data = await res.json();
-        if (data.success) { localStorage.setItem('token', data.token); localStorage.setItem('user', JSON.stringify(data.user)); window.location.href = '/'; }
+        if (data.success) { 
+            localStorage.setItem('token', data.token); 
+            localStorage.setItem('user', JSON.stringify(data.user)); 
+            document.cookie = "jwtToken=" + data.token + "; path=/; max-age=86400";
+            if (data.user && data.user.role === 'Admin') {
+                window.location.href = '/Admin/Dashboard';
+            } else {
+                window.location.href = '/'; 
+            }
+        }
         else showErr(data.message || 'Đăng nhập thất bại');
     } catch { showErr('Không thể kết nối đến máy chủ'); }
     finally {
@@ -371,7 +380,16 @@ async function handleGoogle(response) {
     try {
         const res  = await fetch('/api/account/google-login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idToken: response.credential }) });
         const data = await res.json();
-        if (data.success) { localStorage.setItem('token', data.token); localStorage.setItem('user', JSON.stringify(data.user)); window.location.href = '/'; }
+        if (data.success) { 
+            localStorage.setItem('token', data.token); 
+            localStorage.setItem('user', JSON.stringify(data.user)); 
+            document.cookie = "jwtToken=" + data.token + "; path=/; max-age=86400";
+            if (data.user && data.user.role === 'Admin') {
+                window.location.href = '/Admin/Dashboard';
+            } else {
+                window.location.href = '/'; 
+            }
+        }
         else showErr(data.message || 'Đăng nhập Google thất bại');
     } catch { showErr('Không thể kết nối đến máy chủ'); }
 }
