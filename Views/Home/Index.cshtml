@@ -42,7 +42,7 @@
                     <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                 </div>
                 <div>
-                    <div class="stat-number">1,240+</div>
+                    <div class="stat-number" data-target="1240" data-suffix="+">0+</div>
                     <div class="stat-label">Cảnh báo đã ghi nhận</div>
                 </div>
             </div>
@@ -51,7 +51,7 @@
                     <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 </div>
                 <div>
-                    <div class="stat-number">320+</div>
+                    <div class="stat-number" data-target="320" data-suffix="+">0+</div>
                     <div class="stat-label">Người đã được tìm thấy</div>
                 </div>
             </div>
@@ -60,7 +60,7 @@
                     <svg viewBox="0 0 24 24"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/></svg>
                 </div>
                 <div>
-                    <div class="stat-number">5,800+</div>
+                    <div class="stat-number" data-target="5800" data-suffix="+">0+</div>
                     <div class="stat-label">Tin tức đã đăng</div>
                 </div>
             </div>
@@ -69,7 +69,7 @@
                     <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                 </div>
                 <div>
-                    <div class="stat-number">98%</div>
+                    <div class="stat-number" data-target="98" data-suffix="%">0%</div>
                     <div class="stat-label">Độ hài lòng của người dùng</div>
                 </div>
             </div>
@@ -212,7 +212,7 @@
         <div class="cta-inner">
             <h2>Sẵn sàng bảo vệ cộng đồng?</h2>
             <p>Tham gia cùng hàng nghìn người dân Đà Nẵng đang sử dụng DaNang SafeMap mỗi ngày.</p>
-            <a asp-controller="Account" asp-action="Register" class="btn-cta">
+            <a asp-controller="Auth" asp-action="Register" class="btn-cta">
                 <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
                 Đăng ký miễn phí ngay
             </a>
@@ -281,3 +281,38 @@
     </footer>
 
 </div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const stats = document.querySelectorAll('.stat-number');
+            const observer = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const target = +entry.target.getAttribute('data-target');
+                        const suffix = entry.target.getAttribute('data-suffix') || '';
+                        let count = 0;
+                        const duration = 2000; // 2 seconds
+                        const increment = target / (duration / 16); // 60fps
+
+                        const updateCount = () => {
+                            count += increment;
+                            if (count < target) {
+                                entry.target.innerText = Math.ceil(count).toLocaleString() + suffix;
+                                requestAnimationFrame(updateCount);
+                            } else {
+                                entry.target.innerText = target.toLocaleString() + suffix;
+                            }
+                        };
+                        updateCount();
+                        observer.unobserve(entry.target); // Only animate once
+                    }
+                });
+            }, { threshold: 0.5 }); // Trigger when 50% visible
+
+            stats.forEach(stat => {
+                observer.observe(stat);
+            });
+        });
+    </script>
+}
