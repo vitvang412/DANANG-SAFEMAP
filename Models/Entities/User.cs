@@ -53,5 +53,6 @@ namespace DaNangSafeMap.Models.Entities
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
         public DateTime? LastLoginAt { get; set; }
+        public virtual ICollection<Article> Articles { get; set; } = new List<Article>();
     }
 }

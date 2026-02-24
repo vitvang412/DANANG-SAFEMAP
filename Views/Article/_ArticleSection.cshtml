@@ -1,0 +1,111 @@
+@model IEnumerable<DaNangSafeMap.Models.Entities.Article>
+@{
+    var title = ViewData["SectionTitle"]?.ToString();
+}
+
+<div class="category-header mb-4">
+    <h4 class="category-title">@title</h4>
+</div>
+
+@if (Model != null && Model.Any())
+{
+    <div class="news-list">
+        @foreach (var article in Model)
+        {
+            <div class="news-row-simple">
+                <div class="news-thumb-box">
+                    <a asp-action="Details" asp-route-id="@article.Id">
+                         <img src="@article.ImageUrl" alt="@article.Title">
+                    </a>
+                </div>
+                <div class="news-info">
+                    <a asp-action="Details" asp-route-id="@article.Id" class="text-decoration-none">
+                        <h5 class="news-title">@article.Title</h5>
+                    </a>
+                    <p class="news-excerpt text-muted">@article.Summary</p>
+                    <div class="news-meta">
+                        <i class="bi bi-clock me-1"></i> @article.CreatedAt.ToString("dd/MM/yyyy")
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<style>
+.category-title {
+    font-weight: 800;
+    color: #1a6e2e;
+    text-transform: uppercase;
+    border-left: 5px solid #1a6e2e;
+    padding-left: 10px;
+    font-size: 1.1rem;
+    letter-spacing: 1px;
+}
+
+.news-row-simple {
+    display: flex;
+    gap: 25px;
+    margin-bottom: 30px;
+    padding-bottom: 25px;
+    border-bottom: 1px solid #ececec;
+}
+
+.news-thumb-box {
+    width: 260px;
+    height: 160px;
+    flex-shrink: 0;
+    overflow: hidden;
+    border-radius: 6px;
+}
+
+.news-thumb-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: 0.4s;
+}
+
+.news-thumb-box:hover img {
+    transform: scale(1.08);
+}
+
+.news-title {
+    font-weight: 700;
+    font-size: 1.15rem;
+    color: #111;
+    line-height: 1.4;
+    margin-bottom: 8px;
+    transition: 0.3s;
+}
+
+.news-title:hover {
+    color: #1a6e2e;
+}
+
+.news-excerpt {
+    font-size: 0.92rem;
+    line-height: 1.6;
+    margin-bottom: 8px;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.news-meta {
+    font-size: 0.85rem;
+    color: #888;
+}
+
+@@media (max-width: 768px) {
+    .news-row-simple {
+        flex-direction: column;
+    }
+
+    .news-thumb-box {
+        width: 100%;
+        height: 200px;
+    }
+}
+</style>

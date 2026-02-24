@@ -63,6 +63,7 @@ builder.Services.AddAuthentication(options =>
 // Khi controller cần IAuthService, ASP.NET tự inject AuthService vào
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IArticleService, ArticleService>();
 
 // ─── 4. MVC + API ─────────────────────────────────────────────────────────────
 builder.Services.AddControllersWithViews();

@@ -1,0 +1,113 @@
+@model DaNangSafeMap.Models.Entities.Article
+
+@{
+    ViewData["Title"] = "Đăng tin tức mới";
+}
+
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a asp-action="Index">Tin tức</a></li>
+                    <li class="breadcrumb-item active">Đăng tin mới</li>
+                </ol>
+            </nav>
+
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-primary text-white p-3">
+                    <h4 class="mb-0"><i class="bi bi-pencil-square me-2"></i> Soạn thảo bài viết mới</h4>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="Create" method="post" enctype="multipart/form-data">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label asp-for="Title" class="form-label fw-bold">Tiêu đề bài viết</label>
+                                <input asp-for="Title" class="form-control form-control-lg" placeholder="Nhập tiêu đề hấp dẫn..." />
+                                <span asp-validation-for="Title" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Chuyên mục</label>
+                                <select asp-for="CategoryId" class="form-select">
+                                    <option value="1">Cảnh báo tội phạm</option>
+                                    <option value="2">Tìm kiếm người thân</option>
+                                    <option value="3">Tin tức cộng đồng</option>
+                                </select>
+                            </div>
+                           <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Trạng thái bài viết</label>
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <select asp-for="Status" class="form-select">
+                                    <option value="1">Công khai (Duyệt ngay)</option>
+                                    <option value="0">Lưu nháp (Chờ duyệt)</option>
+                                </select>
+                            }
+                            else
+                            {
+                                <input type="hidden" asp-for="Status" value="0" />
+                                <input class="form-control" value="Chờ kiểm duyệt" readonly />
+                                <small class="text-muted">Bài viết sẽ được hiển thị sau khi Admin phê duyệt.</small>
+                            }
+                        </div>
+
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label fw-bold">Chọn ảnh từ máy tính của bạn</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-image"></i></span>
+                                    <input type="file" name="imageFile" class="form-control" accept="image/*" id="imageUpload" />
+                                </div>
+                                <div id="imagePreview" class="mt-2 d-none">
+                                    <img src="#" alt="Preview" class="img-thumbnail" style="max-height: 200px;">
+                                </div>
+                            </div>
+
+                            <div class="col-md-12 mb-3">
+                                <label asp-for="Summary" class="form-label fw-bold">Tóm tắt ngắn</label>
+                                <textarea asp-for="Summary" class="form-control" rows="2" placeholder="Nội dung này sẽ hiển thị ở trang danh sách và slider..."></textarea>
+                                <span asp-validation-for="Summary" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-12 mb-3">
+                                <label asp-for="Content" class="form-label fw-bold">Nội dung chi tiết bài viết</label>
+                                <textarea asp-for="Content" id="editor" class="form-control"></textarea>
+                                <span asp-validation-for="Content" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <hr />
+                        <div class="d-flex justify-content-end gap-2">
+                            <a asp-action="Index" class="btn btn-outline-secondary px-4">Hủy bỏ</a>
+                            <button type="submit" class="btn btn-primary px-5 shadow">Đăng bài báo</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="https://cdn.ckeditor.com/ckeditor5/36.0.1/classic/ckeditor.js"></script>
+    <script>
+        // Khởi tạo trình soạn thảo văn bản
+        ClassicEditor
+            .create(document.querySelector('#editor'))
+            .catch(error => { console.error(error); });
+
+        // Hiển thị xem trước ảnh (Preview) khi chọn file
+        document.getElementById('imageUpload').onchange = function (evt) {
+            const [file] = this.files;
+            if (file) {
+                const preview = document.querySelector('#imagePreview img');
+                const previewContainer = document.getElementById('imagePreview');
+                preview.src = URL.createObjectURL(file);
+                previewContainer.classList.remove('d-none');
+            }
+        };
+    </script>
+}
