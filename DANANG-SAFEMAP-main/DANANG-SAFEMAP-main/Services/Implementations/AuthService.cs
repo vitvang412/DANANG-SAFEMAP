@@ -173,9 +173,11 @@ namespace DaNangSafeMap.Services.Implementations
                     User = MapToDto(user)
                 };
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return new AuthResponse { Success = false, Message = "Token Google không hợp lệ" };
+                Console.WriteLine("GOOGLE LOGIN ERROR: " + ex.Message);
+                if (ex.InnerException != null) Console.WriteLine("INNER: " + ex.InnerException.Message);
+                return new AuthResponse { Success = false, Message = "Lỗi hệ thống: " + ex.Message };
             }
         }
 
