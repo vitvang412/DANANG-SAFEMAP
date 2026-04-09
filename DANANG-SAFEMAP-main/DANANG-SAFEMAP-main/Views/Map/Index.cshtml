@@ -1,0 +1,160 @@
+@{
+    ViewData["Title"] = "Bản đồ An ninh";
+}
+
+<!-- ═══ Leaflet CSS ═══ -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+<link rel="stylesheet" href="~/css/map.css" asp-append-version="true" />
+
+<!-- ═══ MAP CONTAINER ═══ -->
+<div class="map-wrapper">
+    <!-- Bản đồ -->
+    <div id="map"></div>
+
+    <!-- Nút báo cáo -->
+    <button id="btn-report" class="map-fab" title="Báo cáo sự cố">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+    </button>
+
+    <!-- Nút định vị -->
+    <button id="btn-locate" class="map-fab map-fab--locate" title="Vị trí của tôi">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M12 2v4M12 18v4M2 12h4M18 12h4"></path>
+        </svg>
+    </button>
+
+    <!-- Bộ lọc loại sự cố -->
+    <div id="filter-panel" class="map-filter-panel">
+        <div class="filter-title">Bộ lọc</div>
+        <div id="filter-types" class="filter-types"></div>
+    </div>
+
+    <!-- Time-slider -->
+    <div id="time-slider-panel" class="time-slider-panel">
+        <div class="slider-label-row">
+            <span class="slider-current-label" id="sliderLabel">24 giờ qua</span>
+        </div>
+        <input type="range" id="timeSlider" min="0" max="3" value="0" step="1" />
+        <div class="slider-labels">
+            <span>24h</span>
+            <span>48h</span>
+            <span>7 ngày</span>
+            <span>30 ngày</span>
+        </div>
+    </div>
+
+    <!-- ═══ SIDEBAR BÁO CÁO ═══ -->
+    <div id="sidebar-report" class="report-sidebar">
+        <div class="report-sidebar__header">
+            <h3>📝 Báo cáo sự cố</h3>
+            <button id="btn-close-report" class="report-sidebar__close" title="Đóng">&times;</button>
+        </div>
+
+        <form id="reportForm" class="report-form" enctype="multipart/form-data">
+            <!-- Loại sự cố -->
+            <div class="form-group">
+                <label for="alertType">Loại sự cố <span class="req">*</span></label>
+                <select id="alertType" name="AlertTypeId" required>
+                    <option value="">— Chọn loại sự cố —</option>
+                </select>
+            </div>
+
+            <!-- Vị trí -->
+            <div class="form-group">
+                <label>Vị trí <span class="req">*</span></label>
+                <div id="pinStatus" class="pin-status pin-status--empty">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                        <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                    <span>Click vào bản đồ để ghim vị trí</span>
+                </div>
+                <input type="hidden" id="lat" name="Latitude" />
+                <input type="hidden" id="lng" name="Longitude" />
+            </div>
+
+            <!-- Địa chỉ -->
+            <div class="form-group">
+                <label for="addressText">Địa chỉ (tùy chọn)</label>
+                <input type="text" id="addressText" name="AddressText" placeholder="VD: 123 Trần Phú, Q. Hải Châu" maxlength="500" />
+            </div>
+
+            <!-- Tiêu đề -->
+            <div class="form-group">
+                <label for="title">Tiêu đề <span class="req">*</span></label>
+                <input type="text" id="title" name="Title" placeholder="Mô tả ngắn gọn sự cố" required maxlength="200" />
+            </div>
+
+            <!-- Mô tả -->
+            <div class="form-group">
+                <label for="description">Mô tả chi tiết <span class="req">*</span></label>
+                <textarea id="description" name="Description" rows="4"
+                          placeholder="Mô tả chi tiết sự cố (đối tượng, biển số xe, đặc điểm...)" required minlength="20"></textarea>
+                <div class="char-count"><span id="charCount">0</span>/20 ký tự tối thiểu</div>
+            </div>
+
+            <!-- Thời gian -->
+            <div class="form-group">
+                <label for="incidentTime">Thời gian xảy ra <span class="req">*</span></label>
+                <input type="datetime-local" id="incidentTime" name="IncidentTime" required />
+            </div>
+
+            <!-- Upload ảnh -->
+            <div class="form-group">
+                <label>Ảnh / Video (tùy chọn)</label>
+                <div class="upload-zone" id="uploadZone">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="32" height="32">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    <span>Nhấn để chọn hoặc kéo thả file</span>
+                    <input type="file" id="mediaFiles" name="mediaFiles" accept="image/*,video/mp4" multiple hidden />
+                </div>
+                <div id="previewContainer" class="preview-container"></div>
+            </div>
+
+            <!-- Xác nhận -->
+            <div class="form-group form-group--checkbox">
+                <label>
+                    <input type="checkbox" id="userConfirmed" name="UserConfirmed" value="true" />
+                    <span>Tôi xác nhận thông tin trên là chính xác và chịu trách nhiệm về nội dung</span>
+                </label>
+            </div>
+
+            <!-- Submit -->
+            <button type="submit" id="submitBtn" class="btn-submit" disabled>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+                Gửi báo cáo
+            </button>
+        </form>
+    </div>
+
+    <!-- ═══ THÔNG BÁO GHIM ═══ -->
+    <div id="pin-mode-banner" class="pin-mode-banner" style="display:none;">
+        📍 Click vào bản đồ để chọn vị trí sự cố — <button id="cancelPin" class="cancel-pin-btn">Hủy</button>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+    <!-- Custom JS -->
+    <script src="~/js/map-data.js" asp-append-version="true"></script>
+    <script src="~/js/map-report.js" asp-append-version="true"></script>
+    <script src="~/js/map-core.js" asp-append-version="true"></script>
+}

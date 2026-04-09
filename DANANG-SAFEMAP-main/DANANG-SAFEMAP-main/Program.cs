@@ -57,6 +57,10 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
+// ─── 3b. ALERT SERVICES (Bản đồ + Báo cáo sự cố) ────────────────────────────
+builder.Services.AddScoped<IAlertRepository, AlertRepository>();
+builder.Services.AddScoped<IAlertService, AlertService>();
+
 // ─── 4. MVC + API ─────────────────────────────────────────────────────────────
 builder.Services.AddControllersWithViews();
 

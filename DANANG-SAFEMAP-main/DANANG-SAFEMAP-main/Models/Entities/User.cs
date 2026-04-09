@@ -53,5 +53,15 @@ namespace DaNangSafeMap.Models.Entities
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
         public DateTime? LastLoginAt { get; set; }
+
+        // ── Điểm uy tín cộng đồng (1-10) ──
+        /// <summary>
+        /// Điểm uy tín: 1-2 (mới), 3-5 (thành viên), 6-8 (tin cậy), 9-10 (uy tín)
+        /// Ảnh hưởng đến độ hiển thị tin và quyền hạn trên bản đồ.
+        /// </summary>
+        public int ReputationScore { get; set; } = 5;
+
+        // ── Navigation ──
+        public ICollection<SecurityAlert>? SecurityAlerts { get; set; }
     }
 }
