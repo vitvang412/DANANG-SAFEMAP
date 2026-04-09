@@ -13,12 +13,14 @@ const MapCore = {
 
     // ── Khởi tạo ──
     init() {
-        // Tạo map center Đà Nẵng
+        // Tạo map center Đà Nẵng — zoom 14 vừa trang thành phố
         this.map = L.map('map', {
-            center: [16.047, 108.206],
-            zoom: 14,
+            center: [16.054407, 108.202164],
+            zoom: 13,
             zoomControl: false,
-            maxBounds: [[15.85, 107.85], [16.25, 108.55]],
+            // Giới hạn vùng: chỉ khu vực Đà Nẵng
+            maxBounds: [[15.97, 107.98], [16.18, 108.42]],
+            maxBoundsViscosity: 0.9,
             minZoom: 11,
             maxZoom: 19
         });
@@ -70,6 +72,16 @@ const MapCore = {
 
         // Init report form
         ReportForm.init(this.map);
+
+        // Guide button
+        document.getElementById('btn-guide').addEventListener('click', () => {
+            document.getElementById('guide-modal').style.display = 'flex';
+        });
+
+        // Đóng guide khi click overlay
+        document.getElementById('guide-modal').addEventListener('click', function(e) {
+            if (e.target === this) this.style.display = 'none';
+        });
 
         // Load data
         this._initTimeSlider();

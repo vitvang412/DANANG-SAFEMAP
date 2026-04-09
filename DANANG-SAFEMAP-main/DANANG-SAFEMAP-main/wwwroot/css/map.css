@@ -704,4 +704,136 @@
 
     #btn-report { right: 12px; bottom: 80px; }
     .map-fab--locate { right: 12px; bottom: 140px; }
+    .map-fab--guide { right: 12px; bottom: 200px; }
+    .map-fab--my { right: 12px; bottom: 260px; }
+}
+
+/* ═══ NEW FAB POSITIONS ═══ */
+.map-fab--guide { right: 20px; bottom: 228px; }
+
+.map-fab--my {
+    right: 20px;
+    bottom: 292px;
+    text-decoration: none;
+    color: var(--map-text);
+}
+
+.map-fab--my:hover {
+    background: #7C3AED;
+    color: #fff;
+    transform: scale(1.08);
+}
+
+/* ═══ GUIDE MODAL ═══ */
+.guide-modal {
+    position: absolute;
+    inset: 0;
+    z-index: 1300;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    backdrop-filter: blur(4px);
+}
+
+.guide-modal__box {
+    background: #0F172A;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    padding: 28px;
+    width: 100%;
+    max-width: 540px;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+    animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.92); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.guide-modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.guide-modal__header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #F1F5F9;
+}
+
+.guide-close {
+    background: none;
+    border: none;
+    color: #94A3B8;
+    font-size: 28px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 4px;
+}
+
+.guide-close:hover { color: #EF4444; }
+
+.guide-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.guide-step {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+}
+
+.step-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.guide-step b {
+    display: block;
+    color: #F1F5F9;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.guide-step p {
+    margin: 0;
+    font-size: 13px;
+    color: #94A3B8;
+    line-height: 1.6;
+}
+
+.guide-got-it {
+    width: 100%;
+    padding: 13px;
+    background: linear-gradient(135deg, #10B981, #059669);
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+.guide-got-it:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(16,185,129,0.4);
 }

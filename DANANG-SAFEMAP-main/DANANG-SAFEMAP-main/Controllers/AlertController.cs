@@ -157,12 +157,76 @@ namespace DaNangSafeMap.Controllers
             }
         }
 
-        // ── Helper: Lấy userId từ JWT ──
+        // ─── Helper: Lấy userId từ JWT ──
         private int GetUserId()
         {
             var claim = User.FindFirst(ClaimTypes.NameIdentifier);
             if (claim == null) throw new UnauthorizedAccessException("Vui lòng đăng nhập");
             return int.Parse(claim.Value);
         }
+
+        // ═══════════════════════════════════════════════
+        // GET /api/alerts/my — Báo cáo của tôi
+        // ═══════════════════════════════════════════════
+        [HttpGet("my")]
+        [Authorize]
+        public async Task<IActionResult> GetMyAlerts()
+        {
+            var userId = GetUserId();
+            var alerts = await _alertService.GetMyAlertsAsync(userId);
+            return Ok(alerts);
+        }
+
+        // ═══════════════════════════════════════════════
+        // ADMIN ENDPOINTS
+        // ═══════════════════════════════════════════════
+
+        // GET /api/alerts/admin/pending — Danh sách chờ duyệt
+        [HttpGet("admin/pending")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetPendingAlerts()
+        {
+            var alerts = await _alertService.GetPendingAlertsAsync();
+            return Ok(alerts);
+        }
+
+        // GET /api/alerts/admin/all?status=&page=&pageSize=
+        [HttpGet("admin/all")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetAllAlertsAdmin(
+            [FromQuery] string? status,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20)
+        {
+            var (items, total) = await _alertService.GetAllAlertsForAdminAsync(status, page, pageSize);
+            return Ok(new { items, total, page, pageSize });
+        }
+
+        // POST /api/alerts/admin/{id}/approve
+        [HttpPost("admin/{id}/approve")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> ApproveAlert(int id)
+        {
+            var adminId = GetUserId();
+            var ok = await _alertService.ApproveAlertAsync(id, adminId);
+            return ok
+                ? Ok(new { success = true, message = "Đã duyệt và hiển thị trên bản đồ" })
+                : NotFound(new { success = false, message = "Không tìm thấy báo cáo" });
+        }
+
+        // POST /api/alerts/admin/{id}/reject
+        [HttpPost("admin/{id}/reject")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> RejectAlert(int id, [FromBody] RejectAlertRequest body)
+        {
+            var adminId = GetUserId();
+            var ok = await _alertService.RejectAlertAsync(id, adminId, body.Reason ?? "Không đủ thông tin");
+            return ok
+                ? Ok(new { success = true, message = "Đã từ chối báo cáo" })
+                : NotFound(new { success = false, message = "Không tìm thấy báo cáo" });
+        }
     }
+
+    // Helper model
+    public record RejectAlertRequest(string? Reason);
 }

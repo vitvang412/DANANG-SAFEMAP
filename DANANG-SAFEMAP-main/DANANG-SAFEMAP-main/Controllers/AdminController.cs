@@ -14,7 +14,13 @@ namespace DaNangSafeMap.Controllers
         [HttpGet]
         public IActionResult Dashboard()
         {
-            // Trả về view Admin Dashboard. Layout được set trong View là _AdminLayout
+            return View();
+        }
+
+        // GET: /Admin/AlertModeration — Duyệt báo cáo sự cố
+        [HttpGet]
+        public IActionResult AlertModeration()
+        {
             return View();
         }
 

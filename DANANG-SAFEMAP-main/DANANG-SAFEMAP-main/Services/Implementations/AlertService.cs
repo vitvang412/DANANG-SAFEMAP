@@ -344,5 +344,64 @@ namespace DaNangSafeMap.Services.Implementations
                 CreatedAt = a.CreatedAt
             };
         }
+
+        // ═══════════════════════════════════════════════
+        // MY REPORTS
+        // ═══════════════════════════════════════════════
+
+        public async Task<List<AlertMapDto>> GetMyAlertsAsync(int userId)
+        {
+            var alerts = await _alertRepo.GetAlertsByUserAsync(userId);
+            return alerts.Select(MapToDto).ToList();
+        }
+
+        // ═══════════════════════════════════════════════
+        // ADMIN: DUYỆT BÁO CÁO
+        // ═══════════════════════════════════════════════
+
+        public async Task<List<AlertMapDto>> GetPendingAlertsAsync()
+        {
+            var alerts = await _alertRepo.GetPendingAlertsAsync();
+            return alerts.Select(MapToDto).ToList();
+        }
+
+        public async Task<(List<AlertMapDto> Items, int Total)> GetAllAlertsForAdminAsync(
+            string? status, int page, int pageSize)
+        {
+            var alerts = await _alertRepo.GetAllAlertsForAdminAsync(status, page, pageSize);
+            var total = await _alertRepo.CountAllAlertsAsync(status);
+            return (alerts.Select(MapToDto).ToList(), total);
+        }
+
+        /// <summary>
+        /// Admin APPROVE: chuyển sang VISIBLE_UNVERIFIED → xuất hiện trên bản đồ.
+        /// </summary>
+        public async Task<bool> ApproveAlertAsync(int alertId, int adminUserId)
+        {
+            var alert = await _alertRepo.GetByIdAsync(alertId);
+            if (alert == null) return false;
+
+            alert.Status = "VISIBLE_UNVERIFIED";
+            alert.Opacity = 40;
+            alert.UpdatedAt = DateTime.Now;
+            alert.ExpiresAt = DateTime.Now.AddHours(alert.HasMedia ? 48 : 24);
+            await _alertRepo.UpdateAlertAsync(alert);
+            return true;
+        }
+
+        /// <summary>
+        /// Admin REJECT: ẩn alert, lưu lý do.
+        /// </summary>
+        public async Task<bool> RejectAlertAsync(int alertId, int adminUserId, string reason)
+        {
+            var alert = await _alertRepo.GetByIdAsync(alertId);
+            if (alert == null) return false;
+
+            alert.Status = "REJECTED";
+            alert.UpdatedAt = DateTime.Now;
+            alert.AddressText = $"[Từ chối] {reason}";
+            await _alertRepo.UpdateAlertAsync(alert);
+            return true;
+        }
     }
 }

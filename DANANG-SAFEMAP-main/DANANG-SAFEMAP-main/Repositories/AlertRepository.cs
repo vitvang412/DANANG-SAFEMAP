@@ -180,5 +180,63 @@ namespace DaNangSafeMap.Repositories
                 .Where(a => a.CreatedAt >= since)
                 .CountAsync();
         }
+        // ═══════════════════════════════════════════════
+        // MY REPORTS
+        // ═══════════════════════════════════════════════
+
+        public async Task<List<SecurityAlert>> GetAlertsByUserAsync(int userId)
+        {
+            return await _context.SecurityAlerts
+                .Include(a => a.AlertType)
+                    .ThenInclude(t => t.Category)
+                .Include(a => a.Media.Where(m => m.IsActive))
+                .Where(a => a.UserId == userId)
+                .OrderByDescending(a => a.CreatedAt)
+                .ToListAsync();
+        }
+
+        // ═══════════════════════════════════════════════
+        // ADMIN MANAGEMENT
+        // ═══════════════════════════════════════════════
+
+        public async Task<List<SecurityAlert>> GetPendingAlertsAsync()
+        {
+            return await _context.SecurityAlerts
+                .Include(a => a.AlertType)
+                    .ThenInclude(t => t.Category)
+                .Include(a => a.User)
+                .Include(a => a.Media.Where(m => m.IsActive))
+                .Where(a => a.Status == "PENDING_REVIEW")
+                .OrderByDescending(a => a.CreatedAt)
+                .ToListAsync();
+        }
+
+        public async Task<List<SecurityAlert>> GetAllAlertsForAdminAsync(
+            string? status, int page, int pageSize)
+        {
+            var query = _context.SecurityAlerts
+                .Include(a => a.AlertType)
+                    .ThenInclude(t => t.Category)
+                .Include(a => a.User)
+                .Include(a => a.Media.Where(m => m.IsActive))
+                .AsQueryable();
+
+            if (!string.IsNullOrEmpty(status))
+                query = query.Where(a => a.Status == status);
+
+            return await query
+                .OrderByDescending(a => a.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+        }
+
+        public async Task<int> CountAllAlertsAsync(string? status)
+        {
+            var query = _context.SecurityAlerts.AsQueryable();
+            if (!string.IsNullOrEmpty(status))
+                query = query.Where(a => a.Status == status);
+            return await query.CountAsync();
+        }
     }
 }

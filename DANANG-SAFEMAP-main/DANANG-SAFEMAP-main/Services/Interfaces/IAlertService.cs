@@ -30,5 +30,14 @@ namespace DaNangSafeMap.Services.Interfaces
 
         // ── NV8: Auto-expire ──
         Task ProcessExpiredAlertsAsync();
+
+        // ── My Reports ──
+        Task<List<AlertMapDto>> GetMyAlertsAsync(int userId);
+
+        // ── Admin ──
+        Task<List<AlertMapDto>> GetPendingAlertsAsync();
+        Task<(List<AlertMapDto> Items, int Total)> GetAllAlertsForAdminAsync(string? status, int page, int pageSize);
+        Task<bool> ApproveAlertAsync(int alertId, int adminUserId);
+        Task<bool> RejectAlertAsync(int alertId, int adminUserId, string reason);
     }
 }

@@ -30,6 +30,25 @@
         </svg>
     </button>
 
+    <!-- Nút hướng dẫn -->
+    <button id="btn-guide" class="map-fab map-fab--guide" title="Hướng dẫn sử dụng">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+    </button>
+
+    <!-- Nút báo cáo của tôi -->
+    <a href="/Map/MyReports" id="btn-my-reports" class="map-fab map-fab--my" title="Báo cáo của tôi">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+        </svg>
+    </a>
+
     <!-- Bộ lọc loại sự cố -->
     <div id="filter-panel" class="map-filter-panel">
         <div class="filter-title">Bộ lọc</div>
@@ -47,6 +66,89 @@
             <span>48h</span>
             <span>7 ngày</span>
             <span>30 ngày</span>
+        </div>
+    </div>
+
+    <!-- ═══ GUIDE MODAL ═══ -->
+    <div id="guide-modal" class="guide-modal" style="display:none">
+        <div class="guide-modal__box">
+            <div class="guide-modal__header">
+                <h3>📖 Hướng dẫn sử dụng bản đồ</h3>
+                <button onclick="document.getElementById('guide-modal').style.display='none'" class="guide-close">&times;</button>
+            </div>
+            <div class="guide-steps">
+                <div class="guide-step">
+                    <div class="step-icon" style="background:#DBEAFE;color:#2563EB">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <b>Xem bản đồ theo zoom</b>
+                        <p>Zoom ra (mức 10-12) → xem <b>Heatmap</b> vùng nguy hiểm. Zoom vừa (13-15) → xem <b>Cụm sự cố</b>. Zoom vào (16+) → xem <b>Marker chi tiết</b>.</p>
+                    </div>
+                </div>
+                <div class="guide-step">
+                    <div class="step-icon" style="background:#D1FAE5;color:#059669">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <b>Đọc thông tin marker</b>
+                        <p>Click vào bất kỳ marker nào để xem chi tiết: loại sự cố, thời gian, mô tả, ảnh, và số lần cộng đồng xác nhận.</p>
+                    </div>
+                </div>
+                <div class="guide-step">
+                    <div class="step-icon" style="background:#FEF3C7;color:#D97706">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="20" height="20">
+                            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <b>Báo cáo sự cố mới</b>
+                        <p>Nhấn nút <b>+</b> góc phải → Click bản đồ ghim vị trí → Chọn loại sự cố → Nhập mô tả → Gửi. Báo cáo sẽ chờ Admin duyệt.</p>
+                    </div>
+                </div>
+                <div class="guide-step">
+                    <div class="step-icon" style="background:#F3E8FF;color:#7C3AED">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <b>Theo dõi báo cáo của bạn</b>
+                        <p>Nhấn nút <b>📄</b> bên phải để xem trạng thái các báo cáo bạn đã đóng góp, số xác nhận từ cộng đồng.</p>
+                    </div>
+                </div>
+                <div class="guide-step">
+                    <div class="step-icon" style="background:#FEE2E2;color:#DC2626">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                            <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <b>Xác nhận sự cố cộng đồng</b>
+                        <p>Click marker → nhấn "👍 Tôi cũng ghi nhận" nếu đúng, hoặc "👎 Không ghi nhận" nếu sai. ≥3 xác nhận → marker sáng hơn.</p>
+                    </div>
+                </div>
+                <div class="guide-step">
+                    <div class="step-icon" style="background:#E0F2FE;color:#0284C7">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                            <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <b>Lọc và thanh thời gian</b>
+                        <p>Dùng bộ lọc trái để chọn loại sự cố. Kéo thanh trượt ở đáy để lọc theo khoảng thời gian (24h đến 30 ngày).</p>
+                    </div>
+                </div>
+            </div>
+            <button class="guide-got-it" onclick="document.getElementById('guide-modal').style.display='none'">
+                Đã hiểu, bắt đầu dùng!
+            </button>
         </div>
     </div>
 

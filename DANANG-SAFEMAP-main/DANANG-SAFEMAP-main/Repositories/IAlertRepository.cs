@@ -38,5 +38,15 @@ namespace DaNangSafeMap.Repositories
 
         // ── Clustering check (NV4) ──
         Task<int> CountNearbyAlertsAsync(decimal lat, decimal lng, int alertTypeId, int withinMinutes);
+
+        // ── My Reports: Lấy alerts của 1 user ──
+        Task<List<SecurityAlert>> GetAlertsByUserAsync(int userId);
+
+        // ── Admin: Lấy danh sách chờ duyệt ──
+        Task<List<SecurityAlert>> GetPendingAlertsAsync();
+
+        // ── Admin: Lấy tất cả alerts (có phân trang) ──
+        Task<List<SecurityAlert>> GetAllAlertsForAdminAsync(string? status, int page, int pageSize);
+        Task<int> CountAllAlertsAsync(string? status);
     }
 }
