@@ -9,16 +9,16 @@
     --map-accent: #3B82F6;
     --map-danger: #EF4444;
     --map-warning: #F59E0B;
-    --map-dark: #0F172A;
-    --map-surface: #1E293B;
-    --map-surface-2: #334155;
-    --map-text: #F1F5F9;
-    --map-text-muted: #94A3B8;
-    --map-border: rgba(255,255,255,0.08);
-    --map-glass: rgba(15, 23, 42, 0.85);
-    --map-glass-light: rgba(30, 41, 59, 0.92);
+    --map-dark: #F8FAFC;
+    --map-surface: #FFFFFF;
+    --map-surface-2: #F1F5F9;
+    --map-text: #1E293B;
+    --map-text-muted: #64748B;
+    --map-border: rgba(0,0,0,0.1);
+    --map-glass: rgba(255, 255, 255, 0.85);
+    --map-glass-light: rgba(255, 255, 255, 0.95);
     --map-radius: 12px;
-    --map-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    --map-shadow: 0 8px 32px rgba(0,0,0,0.1);
     --map-transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -738,15 +738,15 @@
 }
 
 .guide-modal__box {
-    background: #0F172A;
-    border: 1px solid rgba(255,255,255,0.1);
+    background: #FFFFFF;
+    border: 1px solid rgba(0,0,0,0.1);
     border-radius: 20px;
     padding: 28px;
     width: 100%;
     max-width: 540px;
     max-height: 85vh;
     overflow-y: auto;
-    box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+    box-shadow: 0 24px 80px rgba(0,0,0,0.2);
     animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -766,13 +766,13 @@
     margin: 0;
     font-size: 18px;
     font-weight: 700;
-    color: #F1F5F9;
+    color: #1E293B;
 }
 
 .guide-close {
     background: none;
     border: none;
-    color: #94A3B8;
+    color: #64748B;
     font-size: 28px;
     cursor: pointer;
     line-height: 1;
@@ -806,7 +806,7 @@
 
 .guide-step b {
     display: block;
-    color: #F1F5F9;
+    color: #1E293B;
     font-size: 14px;
     font-weight: 600;
     margin-bottom: 4px;
@@ -815,7 +815,7 @@
 .guide-step p {
     margin: 0;
     font-size: 13px;
-    color: #94A3B8;
+    color: #64748B;
     line-height: 1.6;
 }
 

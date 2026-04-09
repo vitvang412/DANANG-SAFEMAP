@@ -72,7 +72,7 @@ namespace DaNangSafeMap.Services.Implementations
                 Description = model.Description,
                 IncidentTime = model.IncidentTime,
                 UserConfirmed = model.UserConfirmed,
-                Status = "VISIBLE_UNVERIFIED",
+                Status = "PENDING_REVIEW",
                 TrustScore = trustScore,
                 Opacity = 30,
                 HasMedia = false,

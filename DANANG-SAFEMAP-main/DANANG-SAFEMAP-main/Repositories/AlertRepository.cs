@@ -76,7 +76,7 @@ namespace DaNangSafeMap.Repositories
                     .ThenInclude(t => t.Category)
                 .Include(a => a.User)
                 .Include(a => a.Media.Where(m => m.IsActive))
-                .Where(a => a.Status != "REJECTED" && a.Status != "EXPIRED")
+                .Where(a => a.Status == "VISIBLE_UNVERIFIED" || a.Status == "VISIBLE_VERIFIED")
                 .Where(a => a.Latitude >= southLat && a.Latitude <= northLat)
                 .Where(a => a.Longitude >= westLng && a.Longitude <= eastLng)
                 .Where(a => a.IncidentTime >= fromTime && a.IncidentTime <= toTime)
@@ -89,7 +89,7 @@ namespace DaNangSafeMap.Repositories
             DateTime fromTime, DateTime toTime)
         {
             return await _context.SecurityAlerts
-                .Where(a => a.Status != "REJECTED" && a.Status != "EXPIRED")
+                .Where(a => a.Status == "VISIBLE_UNVERIFIED" || a.Status == "VISIBLE_VERIFIED")
                 .Where(a => a.IncidentTime >= fromTime && a.IncidentTime <= toTime)
                 .Select(a => new SecurityAlert
                 {
