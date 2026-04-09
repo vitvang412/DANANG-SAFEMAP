@@ -72,9 +72,9 @@ namespace DaNangSafeMap.Services.Implementations
                 Description = model.Description,
                 IncidentTime = model.IncidentTime,
                 UserConfirmed = model.UserConfirmed,
-                Status = "PENDING_REVIEW",
+                Status = "VISIBLE_UNVERIFIED", // NV2: Hiện lên map ngay lập tức
                 TrustScore = trustScore,
-                Opacity = 30,
+                Opacity = 30, // Làm mờ lúc đầu
                 HasMedia = false,
                 ExpiresAt = DateTime.Now.AddHours(48),
                 CreatedAt = DateTime.Now,
@@ -361,7 +361,7 @@ namespace DaNangSafeMap.Services.Implementations
 
         public async Task<List<AlertMapDto>> GetPendingAlertsAsync()
         {
-            var alerts = await _alertRepo.GetPendingAlertsAsync();
+            var alerts = await _alertRepo.GetPendingAlertsAsync(); // Sẽ fetch VISIBLE_UNVERIFIED
             return alerts.Select(MapToDto).ToList();
         }
 
@@ -374,17 +374,18 @@ namespace DaNangSafeMap.Services.Implementations
         }
 
         /// <summary>
-        /// Admin APPROVE: chuyển sang VISIBLE_UNVERIFIED → xuất hiện trên bản đồ.
+        /// Admin APPROVE: chuyển sang VISIBLE_VERIFIED → Xác nhận cứng.
         /// </summary>
         public async Task<bool> ApproveAlertAsync(int alertId, int adminUserId)
         {
             var alert = await _alertRepo.GetByIdAsync(alertId);
             if (alert == null) return false;
 
-            alert.Status = "VISIBLE_UNVERIFIED";
-            alert.Opacity = 40;
+            alert.Status = "VISIBLE_VERIFIED";  // Hiện thị đầy đủ trên bản đồ
+            alert.Opacity = 100;               // Sáng rõ nhất - đã xác thực
             alert.UpdatedAt = DateTime.Now;
-            alert.ExpiresAt = DateTime.Now.AddHours(alert.HasMedia ? 48 : 24);
+            // Không expire: Đã duyệt luôn hiện trên bản đồ mãi mãi (cho đến khi Admin xóa)
+            alert.ExpiresAt = DateTime.Now.AddYears(10);
             await _alertRepo.UpdateAlertAsync(alert);
             return true;
         }

@@ -76,12 +76,26 @@ namespace DaNangSafeMap.Repositories
                     .ThenInclude(t => t.Category)
                 .Include(a => a.User)
                 .Include(a => a.Media.Where(m => m.IsActive))
-                .Where(a => a.Status == "VISIBLE_UNVERIFIED" || a.Status == "VISIBLE_VERIFIED")
-                .Where(a => a.Latitude >= southLat && a.Latitude <= northLat)
-                .Where(a => a.Longitude >= westLng && a.Longitude <= eastLng)
-                .Where(a => a.IncidentTime >= fromTime && a.IncidentTime <= toTime)
+                .Where(a =>
+                    // ✅ VISIBLE_VERIFIED: Admin đã duyệt → luôn hiển thị (bỏ qua time filter)
+                    (a.Status == "VISIBLE_VERIFIED"
+                        && a.Latitude >= southLat && a.Latitude <= northLat
+                        && a.Longitude >= westLng && a.Longitude <= eastLng)
+                    ||
+                    // ⏳ VISIBLE_UNVERIFIED: Mới đăng → marker mờ, lọc theo thời gian
+                    (a.Status == "VISIBLE_UNVERIFIED"
+                        && a.Latitude >= southLat && a.Latitude <= northLat
+                        && a.Longitude >= westLng && a.Longitude <= eastLng
+                        && a.IncidentTime >= fromTime && a.IncidentTime <= toTime)
+                    ||
+                    // 🕐 PENDING_REVIEW: Dữ liệu cũ, cũng hiện mờ để cộng đồng xác nhận
+                    (a.Status == "PENDING_REVIEW"
+                        && a.Latitude >= southLat && a.Latitude <= northLat
+                        && a.Longitude >= westLng && a.Longitude <= eastLng
+                        && a.IncidentTime >= fromTime && a.IncidentTime <= toTime)
+                )
                 .OrderByDescending(a => a.CreatedAt)
-                .Take(500) // Giới hạn tránh quá tải
+                .Take(500)
                 .ToListAsync();
         }
 
@@ -206,7 +220,8 @@ namespace DaNangSafeMap.Repositories
                     .ThenInclude(t => t.Category)
                 .Include(a => a.User)
                 .Include(a => a.Media.Where(m => m.IsActive))
-                .Where(a => a.Status == "PENDING_REVIEW")
+                // Lấy cả PENDING_REVIEW (cũ) và VISIBLE_UNVERIFIED (đang chờ Admin duyệt thêm)
+                .Where(a => a.Status == "VISIBLE_UNVERIFIED" || a.Status == "PENDING_REVIEW")
                 .OrderByDescending(a => a.CreatedAt)
                 .ToListAsync();
         }

@@ -84,6 +84,7 @@ const MapCore = {
         });
 
         // Load data
+        this._initSearch();
         this._initTimeSlider();
         this._initFilters();
         this.loadAlerts();
@@ -354,6 +355,84 @@ const MapCore = {
                 );
             }
         });
+    },
+
+    // ── Search Panel (Geocoding) ──
+    _initSearch() {
+        const input = document.getElementById('map-search-input');
+        const clearBtn = document.getElementById('map-search-clear');
+        const resultsBox = document.getElementById('map-search-results');
+        let searchTimeout;
+
+        input.addEventListener('input', (e) => {
+            const query = e.target.value.trim();
+            if (query.length > 0) {
+                clearBtn.style.display = 'block';
+                clearTimeout(searchTimeout);
+                // Đợi 500ms sau khi ngừng gõ mới call API
+                searchTimeout = setTimeout(() => this._performSearch(query, resultsBox), 500);
+            } else {
+                clearBtn.style.display = 'none';
+                resultsBox.style.display = 'none';
+            }
+        });
+
+        clearBtn.addEventListener('click', () => {
+            input.value = '';
+            clearBtn.style.display = 'none';
+            resultsBox.style.display = 'none';
+            input.focus();
+        });
+
+        // Ẩn kết quả nếu click ra ngoài
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.map-search-panel')) {
+                resultsBox.style.display = 'none';
+            }
+        });
+    },
+
+    async _performSearch(query, resultsBox) {
+        try {
+            // Dùng Nominatim API, giới hạn khung vực Đà Nẵng
+            const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&countrycodes=vn&viewbox=107.98,15.97,108.42,16.18&bounded=1&limit=5`;
+            const res = await fetch(url);
+            const data = await res.json();
+            
+            if (data && data.length > 0) {
+                resultsBox.innerHTML = data.map(item => `
+                    <div class="search-result-item" onclick="MapCore.flyToLocation(${item.lat}, ${item.lon}, '${this._escHtml(item.display_name)}')">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; width: 100%;">${this._escHtml(item.display_name)}</span>
+                    </div>
+                `).join('');
+                resultsBox.style.display = 'block';
+            } else {
+                resultsBox.innerHTML = `<div class="search-result-item" style="color:var(--map-text-muted); justify-content: center;">Không tìm thấy địa điểm</div>`;
+                resultsBox.style.display = 'block';
+            }
+        } catch (e) {
+            console.error('Lỗi tìm kiếm:', e);
+        }
+    },
+
+    flyToLocation(lat, lng, name) {
+        // Ẩn bảng kết quả
+        document.getElementById('map-search-results').style.display = 'none';
+        
+        // Bay tới toa độ
+        this.map.flyTo([lat, lng], 17, { animate: true, duration: 1.5 });
+        
+        // Xóa marker search cũ nếu có
+        if (this._searchMarker) {
+            this.map.removeLayer(this._searchMarker);
+        }
+        
+        // Tạo marker báo vị trí tìm kiếm
+        this._searchMarker = L.marker([lat, lng]).addTo(this.map)
+            .bindPopup(`<div style="font-size:13px; font-weight:bold; color:var(--map-text)">📍 Điểm đến:</div>
+                        <div style="font-size:12px; color:var(--map-text-muted); margin-top:4px">${name}</div>`)
+            .openPopup();
     },
 
     // ── Helpers ──
