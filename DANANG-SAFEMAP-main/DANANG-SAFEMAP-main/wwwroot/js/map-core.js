@@ -1,474 +1,361 @@
 // ═══════════════════════════════════════════════════════════
-// MAP-CORE.JS — Khởi tạo bản đồ + markers + layers
+// MAP-CORE.JS — DaNang SafeMap
+// Google Maps style: full-screen map + floating search panel
 // ═══════════════════════════════════════════════════════════
 
-const MapCore = {
-    map: null,
-    markerLayer: null,
-    clusterGroup: null,
-    heatLayer: null,
-    currentAlerts: [],
-    timeRanges: [24, 48, 168, 720], // giờ
-    currentTimeRange: 24,
+// ── Giới hạn vùng bản đồ ──
+const REGION_BOUNDS = [
+    [107.42, 14.92],
+    [108.75, 16.22]
+];
 
-    // ── Khởi tạo ──
-    init() {
-        // Tạo map center Đà Nẵng — zoom 14 vừa trang thành phố
-        this.map = L.map('map', {
-            center: [16.054407, 108.202164],
-            zoom: 13,
-            zoomControl: false,
-            // Giới hạn vùng: chỉ khu vực Đà Nẵng
-            maxBounds: [[15.97, 107.98], [16.18, 108.42]],
-            maxBoundsViscosity: 0.9,
-            minZoom: 11,
-            maxZoom: 19
-        });
+// ── Polygon ranh giới Đà Nẵng + Quảng Nam ──
+const PROVINCE_RING = [
+    [108.75, 16.08], [108.40, 16.22], [108.00, 16.22],
+    [107.92, 16.05], [107.65, 15.90], [107.55, 15.75],
+    [107.43, 15.50], [107.42, 15.18], [107.60, 14.95],
+    [107.88, 14.93], [108.20, 15.00], [108.46, 15.22],
+    [108.65, 15.68], [108.55, 15.92], [108.75, 16.08]
+];
 
-        // Zoom control góc phải
-        L.control.zoom({ position: 'topright' }).addTo(this.map);
+// ─────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function () {
 
-        // Tile layer — Light style
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> | <a href="https://carto.com/">CARTO</a>',
-            subdomains: 'abcd',
-            maxZoom: 19
-        }).addTo(this.map);
+    // ── 1. API Key ──
+    const maptileKey = window.APP_CONFIG && window.APP_CONFIG.goongMaptileKey;
+    if (!maptileKey) {
+        console.error('[MAP] Thiếu GoongMaps:MaptileKey');
+        return;
+    }
 
-        // Tạo 3 layer groups
-        this.markerLayer = L.layerGroup().addTo(this.map);
-        this.clusterGroup = L.markerClusterGroup({
-            maxClusterRadius: 50,
-            spiderfyOnMaxZoom: true,
-            showCoverageOnHover: false,
-            iconCreateFunction: (cluster) => {
-                const count = cluster.getChildCount();
-                let size = 'small';
-                if (count >= 10) size = 'medium';
-                if (count >= 30) size = 'large';
-                return L.divIcon({
-                    html: `<div class="cluster-icon cluster-${size}"><span>${count}</span></div>`,
-                    className: 'custom-cluster',
-                    iconSize: [40, 40]
-                });
-            }
-        });
-        this.heatLayer = L.heatLayer([], {
-            radius: 30,
-            blur: 20,
-            maxZoom: 14,
-            max: 1.0,
-            gradient: {
-                0.2: '#2563EB',
-                0.4: '#10B981',
-                0.6: '#F59E0B',
-                0.8: '#EF4444',
-                1.0: '#DC2626'
-            }
-        });
+    goongjs.accessToken = maptileKey;
 
-        // Bind events
-        this._bindEvents();
+    // ── 2. Khởi tạo bản đồ ──
+    const map = new goongjs.Map({
+        container : 'map',
+        style     : 'https://tiles.goong.io/assets/goong_map_web.json',
+        center    : [108.2022, 16.0544],
+        zoom      : 12.5,
+        minZoom   : 9,
+        maxZoom   : 19,
+        maxBounds : [[107.30, 14.82], [108.88, 16.28]]
+    });
 
-        // Init report form
-        ReportForm.init(this.map);
+    // Expose để các script khác dùng
+    window.MapInstance = map;
 
-        // Guide button
-        document.getElementById('btn-guide').addEventListener('click', () => {
-            document.getElementById('guide-modal').style.display = 'flex';
-        });
+    // ── 3. Controls ──
+    map.addControl(new goongjs.NavigationControl(), 'top-right');
+    map.addControl(new goongjs.ScaleControl({ maxWidth: 100, unit: 'metric' }), 'bottom-left');
 
-        // Đóng guide khi click overlay
-        document.getElementById('guide-modal').addEventListener('click', function(e) {
-            if (e.target === this) this.style.display = 'none';
-        });
+    const geolocate = new goongjs.GeolocateControl({
+        positionOptions: { enableHighAccuracy: true },
+        trackUserLocation: true,
+        showUserHeading: true
+    });
+    map.addControl(geolocate, 'top-right');
+    window.GeolocateCtl = geolocate;
 
-        // Load data
-        this._initSearch();
-        this._initTimeSlider();
-        this._initFilters();
-        this.loadAlerts();
-        this._initLocateButton();
-    },
+    // ─────────────────────────────────────────────────────
+    // GEOLOCATE → Popup thông tin vị trí (như bản cũ)
+    // ─────────────────────────────────────────────────────
+    let locationPopup = null;
 
-    // ── Events ──
-    _bindEvents() {
-        // Load lại khi di chuyển bản đồ
-        let moveTimeout;
-        this.map.on('moveend', () => {
-            clearTimeout(moveTimeout);
-            moveTimeout = setTimeout(() => this.loadAlerts(), 300);
-        });
+    geolocate.on('geolocate', async function (e) {
+        const lng      = e.coords.longitude;
+        const lat      = e.coords.latitude;
+        const accuracy = e.coords.accuracy;
 
-        // Đổi layer theo zoom
-        this.map.on('zoomend', () => {
-            this._updateLayerVisibility();
-        });
-    },
+        // Đóng popup cũ
+        if (locationPopup) locationPopup.remove();
 
-    // ── Đổi layer theo zoom ──
-    _updateLayerVisibility() {
-        const zoom = this.map.getZoom();
+        // Hiện popup loading ngay lập tức
+        locationPopup = new goongjs.Popup({ offset: 12, closeButton: true, maxWidth: '280px' })
+            .setLngLat([lng, lat])
+            .setHTML(buildLocPopupLoading())
+            .addTo(map);
 
-        if (zoom <= 12) {
-            // Heatmap
-            this.map.removeLayer(this.markerLayer);
-            this.map.removeLayer(this.clusterGroup);
-            if (!this.map.hasLayer(this.heatLayer)) {
-                this.map.addLayer(this.heatLayer);
-            }
-            this._loadHeatmap();
-        } else if (zoom <= 15) {
-            // Cluster
-            this.map.removeLayer(this.heatLayer);
-            this.map.removeLayer(this.markerLayer);
-            if (!this.map.hasLayer(this.clusterGroup)) {
-                this.map.addLayer(this.clusterGroup);
-            }
-        } else {
-            // Individual markers
-            this.map.removeLayer(this.heatLayer);
-            this.map.removeLayer(this.clusterGroup);
-            if (!this.map.hasLayer(this.markerLayer)) {
-                this.map.addLayer(this.markerLayer);
+        // Gọi Goong Geocode lấy địa chỉ
+        const address = await getAddressFromCoords(lng, lat);
+
+        // Cập nhật popup đầy đủ
+        if (locationPopup) {
+            locationPopup.setHTML(buildLocPopupFull(address, lat, lng, accuracy));
+        }
+
+        // Nếu user đang mở route panel, tự điền vị trí vào điểm xuất phát
+        const routeCard = document.getElementById('gmRouteCard');
+        if (routeCard && routeCard.style.display !== 'none') {
+            const inpStart = document.getElementById('routeStart');
+            if (inpStart && !inpStart.value) {
+                inpStart.value = '📍 Vị trí hiện tại của bạn';
+                window.RouteStartCoord = { lat, lng };
             }
         }
-    },
+    });
 
-    // ── Load markers ──
-    async loadAlerts() {
+    async function getAddressFromCoords(lng, lat) {
+        const key = window.APP_CONFIG?.goongRestApiKey;
+        if (!key) return 'Không có API Key';
         try {
-            const bounds = this.map.getBounds();
-            const now = new Date();
-            const from = new Date(now.getTime() - this.currentTimeRange * 3600000);
+            const res  = await fetch(`https://rsapi.goong.io/Geocode?latlng=${lat},${lng}&api_key=${key}`);
+            const data = await res.json();
+            return data.results?.[0]?.formatted_address || 'Không tìm thấy địa chỉ';
+        } catch { return 'Lỗi khi lấy địa chỉ'; }
+    }
 
-            const alerts = await MapAPI.getMapAlerts(bounds, from, now);
-            this.currentAlerts = alerts;
-
-            this._renderMarkers(alerts);
-        } catch (e) {
-            console.error('Lỗi tải dữ liệu bản đồ:', e);
-        }
-    },
-
-    _renderMarkers(alerts) {
-        this.markerLayer.clearLayers();
-        this.clusterGroup.clearLayers();
-
-        alerts.forEach(alert => {
-            const marker = this._createMarker(alert);
-
-            // Add to both layers (switch visibility by zoom)
-            this.markerLayer.addLayer(marker);
-            this.clusterGroup.addLayer(this._createMarker(alert));
-        });
-
-        this._updateLayerVisibility();
-    },
-
-    _createMarker(alert) {
-        const opacity = Math.max(0.3, alert.opacity / 100);
-        const color = alert.categoryColor || '#666';
-
-        const icon = L.divIcon({
-            className: 'custom-marker-icon',
-            html: `<div class="marker-icon" style="background:${color};opacity:${opacity}">
-                     <span>${alert.iconEmoji || '⚠️'}</span>
-                   </div>`,
-            iconSize: [36, 36],
-            iconAnchor: [18, 36],
-            popupAnchor: [0, -36]
-        });
-
-        const marker = L.marker([alert.latitude, alert.longitude], { icon });
-
-        // Build popup
-        marker.on('click', async () => {
-            const detail = await MapAPI.getAlertDetail(alert.id);
-            marker.bindPopup(this._buildPopup(detail), {
-                maxWidth: 320,
-                minWidth: 280,
-                closeButton: true
-            }).openPopup();
-        });
-
-        return marker;
-    },
-
-    _buildPopup(a) {
-        const timeAgo = this._timeAgo(new Date(a.incidentTime));
-        const mediaHtml = a.mediaUrls && a.mediaUrls.length > 0
-            ? `<div class="popup-media">${a.mediaUrls.map(url => `<img src="${url}" alt="Media" onclick="window.open('${url}','_blank')" />`).join('')}</div>`
-            : '';
-
-        const statusLabel = {
-            'VISIBLE_VERIFIED': '✅ Đã xác thực',
-            'VISIBLE_UNVERIFIED': '⏳ Chưa xác thực',
-            'PENDING_REVIEW': '🔍 Chờ duyệt',
-            'RESOLVED': '✔️ Đã xử lý'
-        }[a.status] || a.status;
-
-        return `
-            <div class="popup-content">
-                <div class="popup-header">
-                    <span class="popup-emoji">${a.iconEmoji || '⚠️'}</span>
-                    <div>
-                        <div class="popup-title">${this._escHtml(a.title)}</div>
-                        <div style="font-size:11px;color:var(--map-text-muted);margin-top:2px">${a.alertTypeName}</div>
-                    </div>
-                </div>
-                <div class="popup-meta">
-                    <span>📍 ${this._escHtml(a.addressText || 'Không có địa chỉ')}</span>
-                    <span>🕐 ${timeAgo} — ${statusLabel}</span>
-                    <span>👤 ${this._escHtml(a.userName)}</span>
-                </div>
-                <div class="popup-desc">${this._escHtml(a.description)}</div>
-                ${mediaHtml}
-                <div class="popup-stats">
-                    <div class="popup-stat popup-stat--confirm">👍 ${a.confirmCount}</div>
-                    <div class="popup-stat popup-stat--deny">👎 ${a.denyCount}</div>
-                </div>
-                <div class="popup-actions">
-                    <button class="popup-btn popup-btn--confirm" onclick="MapCore.verifyAlert(${a.id},'CONFIRM')">
-                        👍 Tôi cũng ghi nhận
-                    </button>
-                    <button class="popup-btn popup-btn--deny" onclick="MapCore.verifyAlert(${a.id},'DENY')">
-                        👎 Không ghi nhận
-                    </button>
+    function buildLocPopupLoading() {
+        return `<div class="lp">
+            <div class="lp__top">
+                <svg class="lp__pin" viewBox="0 0 20 24" fill="none">
+                    <path d="M10 0C6.13 0 3 3.13 3 7c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#10B981"/>
+                    <circle cx="10" cy="7" r="2.5" fill="white"/>
+                </svg>
+                <div style="flex:1">
+                    <div class="lp__skeleton--line" style="width:140px;margin-bottom:6px"></div>
+                    <div class="lp__skeleton--line" style="width:90px"></div>
                 </div>
             </div>
-        `;
-    },
+        </div>`;
+    }
 
-    // ── Xác nhận cộng đồng ──
-    async verifyAlert(alertId, type) {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            showToast('Vui lòng đăng nhập để xác nhận', 'error');
-            return;
-        }
+    function buildLocPopupFull(address, lat, lng, accuracy) {
+        const latStr = lat >= 0 ? `${lat.toFixed(5)}°N` : `${Math.abs(lat).toFixed(5)}°S`;
+        const lngStr = lng >= 0 ? `${lng.toFixed(5)}°E` : `${Math.abs(lng).toFixed(5)}°W`;
+        return `<div class="lp">
+            <div class="lp__top">
+                <svg class="lp__pin" viewBox="0 0 20 24" fill="none">
+                    <path d="M10 0C6.13 0 3 3.13 3 7c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#10B981"/>
+                    <circle cx="10" cy="7" r="2.5" fill="white"/>
+                </svg>
+                <div>
+                    <div class="lp__addr">${escHtml(address)}</div>
+                </div>
+            </div>
+            <div class="lp__divider"></div>
+            <div class="lp__coords">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" width="11" height="11">
+                    <circle cx="8" cy="8" r="6.5"/><line x1="8" y1="1.5" x2="8" y2="14.5"/>
+                    <line x1="1.5" y1="8" x2="14.5" y2="8"/>
+                    <path d="M2.5 5.5 Q8 4 13.5 5.5" stroke-width="1.2"/>
+                    <path d="M2.5 10.5 Q8 12 13.5 10.5" stroke-width="1.2"/>
+                </svg>
+                <span>${latStr}&thinsp; ${lngStr}</span>
+                ${accuracy ? `<span class="lp__acc">&thinsp;±${Math.round(accuracy)}m</span>` : ''}
+            </div>
+        </div>`;
+    }
 
-        try {
-            const result = await MapAPI.verifyAlert(alertId, {
-                verificationType: type,
-                latitude: this.map.getCenter().lat,
-                longitude: this.map.getCenter().lng
-            });
-
-            if (result.success) {
-                showToast(result.message, 'success');
-                this.loadAlerts(); // Reload markers
-            } else {
-                showToast(result.message, 'error');
+    // ── 4. Mask layer (che vùng ngoài 2 tỉnh) ──
+    map.on('load', function () {
+        const maskGeoJSON = {
+            type: 'Feature',
+            geometry: {
+                type: 'Polygon',
+                coordinates: [
+                    [[-180,-90],[180,-90],[180,90],[-180,90],[-180,-90]],
+                    [...PROVINCE_RING].reverse()
+                ]
             }
-        } catch (e) {
-            showToast('Lỗi kết nối', 'error');
-        }
-    },
+        };
 
-    // ── Heatmap ──
-    async _loadHeatmap() {
+        map.addSource('region-mask-src', { type: 'geojson', data: maskGeoJSON });
+        map.addLayer({
+            id: 'region-mask-fill', type: 'fill', source: 'region-mask-src',
+            paint: { 'fill-color': '#e8e6e0', 'fill-opacity': 0.82 }
+        });
+
+        map.addSource('region-border-src', {
+            type: 'geojson',
+            data: { type: 'Feature', geometry: { type: 'LineString', coordinates: PROVINCE_RING } }
+        });
+        map.addLayer({
+            id: 'region-border', type: 'line', source: 'region-border-src',
+            paint: { 'line-color': '#10B981', 'line-width': 1.5, 'line-opacity': 0.6, 'line-dasharray': [4, 3] }
+        });
+    });
+
+    // ═══════════════════════════════════════════════════
+    // FLOATING SEARCH — Google Maps style
+    // ═══════════════════════════════════════════════════
+    const searchInput   = document.getElementById('mapSearchInput');
+    const btnClearSrch  = document.getElementById('btnClearSearch');
+    const dropdown      = document.getElementById('searchDropdown');
+    const stateSearch   = document.getElementById('stateSearch');
+    const placeCard     = document.getElementById('gmPlaceCard');
+    const routeCard     = document.getElementById('gmRouteCard');
+
+    let searchTimer  = null;
+    let searchMarker = null;
+    let selectedPlace = null; // { name, addr, lat, lng }
+
+    // ── Input: gõ → autocomplete ──
+    if (searchInput) {
+        searchInput.addEventListener('input', function () {
+            const q = searchInput.value.trim();
+            if (btnClearSrch) btnClearSrch.style.display = q ? 'flex' : 'none';
+            if (q.length < 2) { hideDropdown(); return; }
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => doSearch(q), 400);
+        });
+
+        // Hiện lại dropdown nếu có kết quả và focus lại
+        searchInput.addEventListener('focus', () => {
+            if (dropdown && dropdown.children.length > 0) dropdown.style.display = 'block';
+        });
+    }
+
+    if (btnClearSrch) {
+        btnClearSrch.addEventListener('click', () => {
+            if (searchInput) searchInput.value = '';
+            btnClearSrch.style.display = 'none';
+            hideDropdown();
+            hidePlaceCard();
+            clearMarker();
+            selectedPlace = null;
+            window.SelectedPlace = null;
+        });
+    }
+
+    // Ẩn dropdown khi click ngoài
+    document.addEventListener('click', e => {
+        if (stateSearch && !stateSearch.contains(e.target)) hideDropdown();
+    });
+
+    // ── Goong AutoComplete ──
+    async function doSearch(query) {
+        const key = window.APP_CONFIG?.goongRestApiKey;
+        if (!key) return;
         try {
-            const now = new Date();
-            const from = new Date(now.getTime() - this.currentTimeRange * 3600000);
-            const data = await MapAPI.getHeatmapData(from, now);
-            const points = data.map(d => [d.lat, d.lng, d.intensity || 1]);
-            this.heatLayer.setLatLngs(points);
-        } catch (e) {
-            console.error('Lỗi tải heatmap:', e);
-        }
-    },
-
-    // ── Time Slider ──
-    _initTimeSlider() {
-        const slider = document.getElementById('timeSlider');
-        const label = document.getElementById('sliderLabel');
-        const labels = ['24 giờ qua', '48 giờ qua', '7 ngày qua', '30 ngày qua'];
-
-        slider.addEventListener('input', () => {
-            const idx = parseInt(slider.value);
-            label.textContent = labels[idx];
-            this.currentTimeRange = this.timeRanges[idx];
-            this.loadAlerts();
-        });
-    },
-
-    // ── Bộ lọc loại sự cố ──
-    async _initFilters() {
-        try {
-            const types = await MapAPI.getAlertTypes();
-            const container = document.getElementById('filter-types');
-
-            // All button
-            const allChip = document.createElement('button');
-            allChip.className = 'filter-chip active';
-            allChip.textContent = 'Tất cả';
-            allChip.dataset.typeId = 'all';
-            allChip.addEventListener('click', () => this._filterByType('all'));
-            container.appendChild(allChip);
-
-            types.forEach(t => {
-                const chip = document.createElement('button');
-                chip.className = 'filter-chip';
-                chip.dataset.typeId = t.id;
-                chip.innerHTML = `<span class="chip-dot" style="background:${t.categoryColor}"></span>${t.iconEmoji || ''} ${t.name}`;
-                chip.addEventListener('click', () => this._filterByType(t.id));
-                container.appendChild(chip);
-            });
-        } catch (e) {
-            console.error('Lỗi tải bộ lọc:', e);
-        }
-    },
-
-    _filterByType(typeId) {
-        // Update UI
-        document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-        document.querySelector(`.filter-chip[data-type-id="${typeId}"]`).classList.add('active');
-
-        // Lọc markers
-        if (typeId === 'all') {
-            this._renderMarkers(this.currentAlerts);
-        } else {
-            const filtered = this.currentAlerts.filter(a => a.alertTypeId === typeId);
-            this._renderMarkers(filtered);
-        }
-    },
-
-    // ── Nút định vị ──
-    _initLocateButton() {
-        document.getElementById('btn-locate').addEventListener('click', () => {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (pos) => {
-                        const { latitude, longitude } = pos.coords;
-                        this.map.setView([latitude, longitude], 16);
-                        L.marker([latitude, longitude], {
-                            icon: L.divIcon({
-                                className: 'user-location',
-                                html: '<div style="width:14px;height:14px;background:#3B82F6;border-radius:50%;border:3px solid #fff;box-shadow:0 0 12px rgba(59,130,246,0.6)"></div>',
-                                iconSize: [14, 14],
-                                iconAnchor: [7, 7]
-                            })
-                        }).addTo(this.map);
-                    },
-                    () => showToast('Không thể xác định vị trí của bạn', 'error')
-                );
-            }
-        });
-    },
-
-    // ── Search Panel (Geocoding) ──
-    _initSearch() {
-        const input = document.getElementById('map-search-input');
-        const clearBtn = document.getElementById('map-search-clear');
-        const resultsBox = document.getElementById('map-search-results');
-        let searchTimeout;
-
-        input.addEventListener('input', (e) => {
-            const query = e.target.value.trim();
-            if (query.length > 0) {
-                clearBtn.style.display = 'block';
-                clearTimeout(searchTimeout);
-                // Đợi 500ms sau khi ngừng gõ mới call API
-                searchTimeout = setTimeout(() => this._performSearch(query, resultsBox), 500);
-            } else {
-                clearBtn.style.display = 'none';
-                resultsBox.style.display = 'none';
-            }
-        });
-
-        clearBtn.addEventListener('click', () => {
-            input.value = '';
-            clearBtn.style.display = 'none';
-            resultsBox.style.display = 'none';
-            input.focus();
-        });
-
-        // Ẩn kết quả nếu click ra ngoài
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.map-search-panel')) {
-                resultsBox.style.display = 'none';
-            }
-        });
-    },
-
-    async _performSearch(query, resultsBox) {
-        try {
-            // Dùng Nominatim API, giới hạn khung vực Đà Nẵng
-            const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&countrycodes=vn&viewbox=107.98,15.97,108.42,16.18&bounded=1&limit=5`;
+            const c   = map.getCenter();
+            const url = `https://rsapi.goong.io/Place/AutoComplete?input=${encodeURIComponent(query)}&location=${c.lat},${c.lng}&radius=50000&more_compound=true&api_key=${key}`;
             const res = await fetch(url);
+            if (!res.ok) return;
             const data = await res.json();
-            
-            if (data && data.length > 0) {
-                resultsBox.innerHTML = data.map(item => `
-                    <div class="search-result-item" onclick="MapCore.flyToLocation(${item.lat}, ${item.lon}, '${this._escHtml(item.display_name)}')">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                        <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; width: 100%;">${this._escHtml(item.display_name)}</span>
-                    </div>
-                `).join('');
-                resultsBox.style.display = 'block';
-            } else {
-                resultsBox.innerHTML = `<div class="search-result-item" style="color:var(--map-text-muted); justify-content: center;">Không tìm thấy địa điểm</div>`;
-                resultsBox.style.display = 'block';
-            }
-        } catch (e) {
-            console.error('Lỗi tìm kiếm:', e);
-        }
-    },
 
-    flyToLocation(lat, lng, name) {
-        // Ẩn bảng kết quả
-        document.getElementById('map-search-results').style.display = 'none';
-        
-        // Bay tới toa độ
-        this.map.flyTo([lat, lng], 17, { animate: true, duration: 1.5 });
-        
-        // Xóa marker search cũ nếu có
-        if (this._searchMarker) {
-            this.map.removeLayer(this._searchMarker);
+            if (!data.predictions?.length) {
+                dropdown.innerHTML = '<div class="gm-drop-empty">Không tìm thấy địa điểm nào</div>';
+            } else {
+                dropdown.innerHTML = data.predictions.slice(0, 6).map(p => `
+                    <div class="gm-drop-item"
+                         data-pid="${escHtml(p.place_id)}"
+                         data-desc="${escHtml(p.description)}"
+                         data-main="${escHtml(p.structured_formatting?.main_text || p.description)}"
+                         data-sub="${escHtml(p.structured_formatting?.secondary_text || '')}">
+                        <svg class="gm-drop-item__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                        </svg>
+                        <div style="overflow:hidden;min-width:0">
+                            <div class="gm-drop-item__main">${escHtml(p.structured_formatting?.main_text || p.description)}</div>
+                            <div class="gm-drop-item__sub">${escHtml(p.structured_formatting?.secondary_text || '')}</div>
+                        </div>
+                    </div>`).join('');
+
+                dropdown.querySelectorAll('.gm-drop-item[data-pid]').forEach(item => {
+                    item.addEventListener('click', () => {
+                        selectPlace(item.dataset.pid, item.dataset.desc, item.dataset.main);
+                    });
+                });
+            }
+            dropdown.style.display = 'block';
+        } catch (e) { console.error('[MAP] Search error:', e); }
+    }
+
+    // ── Chọn một địa điểm → hiển thị Place Card ──
+    async function selectPlace(placeId, description, mainText) {
+        hideDropdown();
+        if (searchInput) searchInput.value = mainText || description;
+
+        const key = window.APP_CONFIG?.goongRestApiKey;
+        if (!key) return;
+
+        try {
+            const res  = await fetch(`https://rsapi.goong.io/Place/Detail?place_id=${placeId}&api_key=${key}`);
+            if (!res.ok) return;
+            const data = await res.json();
+            const loc  = data.result?.geometry?.location;
+            if (!loc) return;
+
+            const name = data.result.name || mainText || description;
+            const addr = data.result.formatted_address || description;
+
+            selectedPlace = { name, addr, lat: loc.lat, lng: loc.lng };
+            window.SelectedPlace = selectedPlace;
+
+            // Đặt marker
+            clearMarker();
+            searchMarker = new goongjs.Marker({ color: '#10B981' })
+                .setLngLat([loc.lng, loc.lat])
+                .addTo(map);
+
+            // Bay đến
+            map.flyTo({ center: [loc.lng, loc.lat], zoom: 17, duration: 1000 });
+
+            // Điền card
+            const latStr = `${Math.abs(loc.lat).toFixed(5)}°${loc.lat >= 0 ? 'N' : 'S'}`;
+            const lngStr = `${Math.abs(loc.lng).toFixed(5)}°${loc.lng >= 0 ? 'E' : 'W'}`;
+
+            setText('cardPlaceName', name);
+            setText('cardPlaceAddr', addr !== name ? addr : '');
+            setText('cardPlaceCoords', `${latStr}  ·  ${lngStr}`);
+
+            if (placeCard) placeCard.style.display = 'block';
+
+        } catch (e) { console.error('[MAP] Place detail error:', e); }
+    }
+
+    // ── Đóng Place Card ──
+    on('btnClosePlaceCard', 'click', () => {
+        hidePlaceCard();
+        clearMarker();
+        selectedPlace = null;
+        window.SelectedPlace = null;
+        if (searchInput) searchInput.value = '';
+        if (btnClearSrch) btnClearSrch.style.display = 'none';
+    });
+
+    // ── "Đường đi" → mở Route Card ──
+    on('btnGetDirections', 'click', () => {
+        hidePlaceCard();
+        if (stateSearch) stateSearch.style.display = 'none';
+
+        // Pre-fill điểm đến
+        const endInput = document.getElementById('routeEnd');
+        if (endInput && selectedPlace) {
+            endInput.value = selectedPlace.name;
+            window.RouteEndCoord = { lat: selectedPlace.lat, lng: selectedPlace.lng };
         }
-        
-        // Tạo marker báo vị trí tìm kiếm
-        this._searchMarker = L.marker([lat, lng]).addTo(this.map)
-            .bindPopup(`<div style="font-size:13px; font-weight:bold; color:var(--map-text)">📍 Điểm đến:</div>
-                        <div style="font-size:12px; color:var(--map-text-muted); margin-top:4px">${name}</div>`)
-            .openPopup();
-    },
+        if (routeCard) routeCard.style.display = 'block';
+    });
+
+    // ── "Định vị" button ──
+    on('btnUseMyLoc', 'click', () => {
+        if (!navigator.geolocation) return;
+        navigator.geolocation.getCurrentPosition(pos => {
+            map.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 16, duration: 1000 });
+        });
+    });
+
+    // ── Đóng Route Card → quay về search ──
+    on('btnCloseRoute', 'click', () => {
+        if (routeCard) routeCard.style.display = 'none';
+        if (stateSearch) stateSearch.style.display = 'block';
+    });
 
     // ── Helpers ──
-    _timeAgo(date) {
-        const diff = (Date.now() - date.getTime()) / 1000;
-        if (diff < 60) return 'Vừa xong';
-        if (diff < 3600) return `${Math.floor(diff / 60)} phút trước`;
-        if (diff < 86400) return `${Math.floor(diff / 3600)} giờ trước`;
-        return `${Math.floor(diff / 86400)} ngày trước`;
-    },
+    function hideDropdown() { if (dropdown) dropdown.style.display = 'none'; }
+    function hidePlaceCard(){ if (placeCard) placeCard.style.display = 'none'; }
+    function clearMarker()  { if (searchMarker) { searchMarker.remove(); searchMarker = null; } }
+    function setText(id, text) { const el = document.getElementById(id); if (el) el.textContent = text; }
+    function on(id, evt, fn) { const el = document.getElementById(id); if (el) el.addEventListener(evt, fn); }
 
-    _escHtml(str) {
-        if (!str) return '';
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
-    }
-};
+    console.log('[MAP] SafeMap ready — Đà Nẵng & Quảng Nam');
+});
 
-// ── Cluster icon CSS (inject) ──
-(function() {
-    const style = document.createElement('style');
-    style.textContent = `
-        .custom-cluster { background: none !important; border: none !important; }
-        .cluster-icon {
-            display: flex; align-items: center; justify-content: center;
-            width: 40px; height: 40px; border-radius: 50%;
-            font-weight: 700; font-size: 14px; color: #fff;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.3);
-        }
-        .cluster-small { background: rgba(16,185,129,0.85); }
-        .cluster-medium { background: rgba(245,158,11,0.85); width: 46px; height: 46px; font-size: 15px; }
-        .cluster-large { background: rgba(239,68,68,0.85); width: 54px; height: 54px; font-size: 16px; }
-    `;
-    document.head.appendChild(style);
-})();
-
-// ── Start! ──
-document.addEventListener('DOMContentLoaded', () => MapCore.init());
+// ── escHtml (global, dùng cho map-routing.js cũng) ──
+function escHtml(str) {
+    if (!str) return '';
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+}
