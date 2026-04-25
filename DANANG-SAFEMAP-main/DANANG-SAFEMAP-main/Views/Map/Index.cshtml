@@ -34,6 +34,12 @@
 
         <!-- ── STATE 2: Card thông tin địa điểm ── -->
         <div class="gm-place-card" id="gmPlaceCard" style="display:none">
+            <div class="gm-place-card__photo">
+                <div class="gm-photo-skeleton" id="gmPhotoSkeleton"></div>
+                <img id="cardPlaceImg" src="" alt="Place Photo" style="display:none" 
+                     onload="this.style.display='block'; document.getElementById('gmPhotoSkeleton').style.display='none'; this.classList.add('loaded');" 
+                     onerror="this.src='/images/default-place.jpg'" />
+            </div>
             <div class="gm-place-card__header">
                 <button class="gm-back-btn" id="btnClosePlaceCard">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
@@ -125,7 +131,9 @@
             <!-- Kết quả 3 phương tiện -->
             <div class="gm-route-results" id="routeResults" style="display:none">
                 <div class="gm-result-row active" id="resDriving">
-                    <span class="gm-result-icon">🚗</span>
+                    <span class="gm-result-icon">
+                        <svg width="22" height="22" viewBox="0 0 24 24"><path fill="currentColor" d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"></path></svg>
+                    </span>
                     <div class="gm-result-body">
                         <div class="gm-result-time" id="timeCar">—</div>
                         <div class="gm-result-dist" id="distCar">—</div>
@@ -133,14 +141,18 @@
                     <div class="gm-result-badge">Nhanh</div>
                 </div>
                 <div class="gm-result-row" id="resMoto">
-                    <span class="gm-result-icon">🛵</span>
+                    <span class="gm-result-icon">
+                        <svg width="22" height="22" viewBox="0 0 24 24"><path fill="currentColor" d="M19.44 9.03L15.41 5H11v2h3.59l2 2H5c-2.8 0-5 2.2-5 5s2.2 5 5 5c2.46 0 4.45-1.69 4.9-4h4.2c.45 2.31 2.44 4 4.9 4 2.8 0 5-2.2 5-5 0-2.12-1.39-3.96-3.36-4.73zM5 17c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm14 0c-1.66 0-3-1.34-3-3 0-.09.01-.18.02-.27l3.66-3.66c1.23.41 2.15 1.51 2.29 2.89L19 14v3zM10.84 13L9.61 11h6.63l-1.92 1.92-3.48.08z"></path></svg>
+                    </span>
                     <div class="gm-result-body">
                         <div class="gm-result-time" id="timeMoto">—</div>
                         <div class="gm-result-dist" id="distMoto">—</div>
                     </div>
                 </div>
                 <div class="gm-result-row" id="resFoot">
-                    <span class="gm-result-icon">🚶</span>
+                    <span class="gm-result-icon">
+                        <svg width="22" height="22" viewBox="0 0 24 24"><path fill="currentColor" d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7"></path></svg>
+                    </span>
                     <div class="gm-result-body">
                         <div class="gm-result-time" id="timeFoot">—</div>
                         <div class="gm-result-dist" id="distFoot">—</div>
@@ -163,6 +175,14 @@
 
 </div><!-- /gm-container -->
 
+<!-- Nút Toggle Vệ tinh: nằm ngoài container, dùng position:fixed để không bị WebGL canvas đè -->
+<button id="btnToggleSatellite" class="gm-layer-toggle" title="Bật/Tắt chế độ vệ tinh">
+    <div class="gm-layer-toggle-inner">
+        <div class="gm-layer-icon"></div>
+        <span class="gm-layer-text" id="layerToggleText">Vệ tinh</span>
+    </div>
+</button>
+
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/@@goongmaps/goong-js@1.0.9/dist/goong-js.js"></script>
     <script>
@@ -173,4 +193,6 @@
     </script>
     <script src="~/js/map-core.js" asp-append-version="true"></script>
     <script src="~/js/map-routing.js" asp-append-version="true"></script>
+
+
 }

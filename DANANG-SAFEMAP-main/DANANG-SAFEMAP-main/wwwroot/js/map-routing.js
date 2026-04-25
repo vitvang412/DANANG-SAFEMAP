@@ -243,9 +243,11 @@ function initRouting(map) {
             storedRoutes = { driving: rDriving, motorbike: rMoto, foot: rWalking };
 
             // ── Hiển thị kết quả ─────────────────────────────────────────────
-            updateRow('resDriving', 'timeCar', 'distCar', rDriving, 'driving');
-            updateRow('resMoto', 'timeMoto', 'distMoto', rMoto, 'motorbike');
-            updateRow('resFoot', 'timeFoot', 'distFoot', rWalking, 'foot');
+            const tCar = updateRow('resDriving', 'timeCar', 'distCar', rDriving, 'driving');
+            const tMoto = updateRow('resMoto', 'timeMoto', 'distMoto', rMoto, 'motorbike');
+            const tFoot = updateRow('resFoot', 'timeFoot', 'distFoot', rWalking, 'foot');
+
+            showFastestBadge({ resDriving: tCar, resMoto: tMoto, resFoot: tFoot });
 
             // Vẽ mặc định = ô tô
             activeMode = 'driving';
@@ -283,6 +285,33 @@ function initRouting(map) {
         const adjustedSec = route.duration * (TRAFFIC_FACTOR[mode] ?? 1.3);
         setText(timeId, fmtTime(adjustedSec));
         setText(distId, fmtDist(route.distance));
+        return adjustedSec;
+    }
+
+    function showFastestBadge(times) {
+        // Xóa badge cũ nếu có
+        const oldBadge = document.querySelector('.gm-result-badge');
+        if (oldBadge) oldBadge.remove();
+
+        // Tìm row có thời gian nhỏ nhất
+        let minId = null;
+        let minTime = Infinity;
+        for (const [id, t] of Object.entries(times)) {
+            if (t < minTime) {
+                minTime = t;
+                minId = id;
+            }
+        }
+
+        if (minId) {
+            const row = document.getElementById(minId);
+            if (row) {
+                const badge = document.createElement('div');
+                badge.className = 'gm-result-badge';
+                badge.textContent = 'Nhanh';
+                row.appendChild(badge);
+            }
+        }
     }
 
     // ── Xóa tuyến ─────────────────────────────────────────

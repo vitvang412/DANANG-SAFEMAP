@@ -56,6 +56,26 @@ document.addEventListener('DOMContentLoaded', function () {
     map.addControl(geolocate, 'top-right');
     window.GeolocateCtl = geolocate;
 
+    // ── Nút chuyển vệ tinh (Giao diện HTML ngoài) ──
+    var isSatellite = false;
+    const btnToggleSat = document.getElementById('btnToggleSatellite');
+    if (btnToggleSat) {
+        btnToggleSat.addEventListener('click', function () {
+            isSatellite = !isSatellite;
+            var layer = map.getLayer('satellite-layer');
+            if (!layer) { console.warn('[SAT] Satellite layer not ready yet'); return; }
+            if (isSatellite) {
+                map.setLayoutProperty('satellite-layer', 'visibility', 'visible');
+                btnToggleSat.classList.add('is-satellite');
+                document.getElementById('layerToggleText').textContent = 'Bản đồ';
+            } else {
+                map.setLayoutProperty('satellite-layer', 'visibility', 'none');
+                btnToggleSat.classList.remove('is-satellite');
+                document.getElementById('layerToggleText').textContent = 'Vệ tinh';
+            }
+        });
+    }
+
     // ─────────────────────────────────────────────────────
     // GEOLOCATE → Popup thông tin vị trí (như bản cũ)
     // ─────────────────────────────────────────────────────
@@ -173,6 +193,25 @@ document.addEventListener('DOMContentLoaded', function () {
             id: 'region-border', type: 'line', source: 'region-border-src',
             paint: { 'line-color': '#10B981', 'line-width': 1.5, 'line-opacity': 0.6, 'line-dasharray': [4, 3] }
         });
+
+        // ── Lớp bản đồ vệ tinh (Google Hybrid) ──
+        map.addSource('satellite-src', {
+            type: 'raster',
+            tiles: [
+                'https://mt0.google.com/vt/lyrs=y&hl=vi&x={x}&y={y}&z={z}',
+                'https://mt1.google.com/vt/lyrs=y&hl=vi&x={x}&y={y}&z={z}',
+                'https://mt2.google.com/vt/lyrs=y&hl=vi&x={x}&y={y}&z={z}',
+                'https://mt3.google.com/vt/lyrs=y&hl=vi&x={x}&y={y}&z={z}'
+            ],
+            tileSize: 256
+        });
+        map.addLayer({
+            id: 'satellite-layer',
+            type: 'raster',
+            source: 'satellite-src',
+            layout: { 'visibility': 'none' },
+            paint: { 'raster-opacity': 1 }
+        }, 'region-mask-fill');
     });
 
     // ═══════════════════════════════════════════════════
@@ -298,6 +337,18 @@ document.addEventListener('DOMContentLoaded', function () {
             setText('cardPlaceName', name);
             setText('cardPlaceAddr', addr !== name ? addr : '');
             setText('cardPlaceCoords', `${latStr}  ·  ${lngStr}`);
+
+            // ── Cập nhật ảnh địa điểm (Dùng ArcGIS Satellite độ phân giải cao) ──
+            const imgEl = document.getElementById('cardPlaceImg');
+            const skel  = document.getElementById('gmPhotoSkeleton');
+            if (imgEl && skel) {
+                imgEl.style.display = 'none';
+                imgEl.classList.remove('loaded');
+                skel.style.display = 'block';
+                // Bao phủ khoảng 300m quanh vị trí
+                const d = 0.0015;
+                imgEl.src = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=${loc.lng-d},${loc.lat-d},${loc.lng+d},${loc.lat+d}&bboxSR=4326&imageSR=4326&size=600,300&format=jpg&f=image`;
+            }
 
             if (placeCard) placeCard.style.display = 'block';
 
